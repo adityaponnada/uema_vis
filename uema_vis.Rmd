@@ -147,7 +147,7 @@ p_id_list <- get_p_id_list(combined_uema_file)
 ui <- fluidPage(
   
   # Application title
-  titlePanel("uEMA explorer"),
+  titlePanel("micro-EMA explorer"),
   
   # Sidebar with dropdown
   
