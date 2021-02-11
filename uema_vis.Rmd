@@ -266,7 +266,7 @@ server <- function(input, output) {
 
     ## input dependant on the choices in `data1`
   output$date_p_id <- renderUI({
-        selectInput("date_p_id", "Select dates", choices = c(get_date_list(input$p_id, combined_uema_file)), multiple = TRUE)
+        selectizeInput("date_p_id", "Select dates", choices = c(get_date_list(input$p_id, combined_uema_file)), options = list(maxItems = 7))
     })
   
   observeEvent(input$generate_plot, {
