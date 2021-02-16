@@ -37,7 +37,12 @@ combined_uema_file <- do.call(rbind, lapply(pattern_files_found, read.csv))
 
 ## Convert the prompt time to date time column
 ```{r}
-combined_uema_file <- subset(combined_uema_file, combined_uema_file$Answer_Status == "Completed" | combined_uema_file$Answer_Status == "CompletedThenDismissed" )
+# combined_uema_file <- subset(combined_uema_file, combined_uema_file$Answer_Status == "Completed" | combined_uema_file$Answer_Status == "CompletedThenDismissed" )
+
+## if unanswered then set prompt time as the completion time?
+combined_uema_file$Prompt_Time_only <- substr(combined_uema_file$Initial_Prompt_Local_Time, 12, 19)
+combined_uema_file$Question_Set_Completion_Local_Time[combined_uema_file$Question_X_Answer_Text == '-NOT_ANS-'] <- combined_uema_file$Prompt_Time_only
+
 
 combined_uema_file$date_time <- paste0(combined_uema_file$Initial_Prompt_Date, " ", combined_uema_file$Question_Set_Completion_Local_Time)
 
@@ -66,6 +71,7 @@ combined_uema_file <- combined_uema_file[!grepl("soc_", combined_uema_file$Quest
 combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "Yes"] <- 3
 combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "Sort of"] <- 2
 combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "No"] <- 1
+combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "-NOT_ANS-"] <- 0
 
 ```
 
