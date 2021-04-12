@@ -21,9 +21,11 @@ library(plyr)
 ## Get file location
 Get the root file location and construct user paths from it
 ```{r}
-pre_process_root_path <- "D:/Intermediate_TIME_files/intermediate_file"
+# pre_process_root_path <- "D:/Intermediate_TIME_files/intermediate_file"
+pre_process_root_path <- "D:/new_data_pre_processed/watch"
 
-file_pattern <- paste0(pre_process_root_path, '/*/*/watch_promptresponse_clean_*.csv')
+# file_pattern <- paste0(pre_process_root_path, '/*/*/watch_promptresponse_clean_*.csv')
+file_pattern <- paste0(pre_process_root_path, '/*/watch_promptresponse_clean_*.csv')
 
 ```
 

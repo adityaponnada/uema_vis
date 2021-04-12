@@ -1,0 +1,587 @@
+---
+title: "uEMA Temporal associations"
+author: "Aditya Ponnada"
+date: "3/3/2021"
+output: html_document
+---
+## import libraries
+```{r}
+library(plotly)
+library(ggplot2)
+library(shiny)
+library(shinycssloaders)
+library(shinydashboard)
+library(reshape2)
+library(dplyr)
+library(plyr)
+library(psych)
+```
+
+## Get file location
+Get the root file location and construct user paths from it
+```{r}
+# pre_process_root_path <- "D:/Intermediate_TIME_files/intermediate_file"
+pre_process_root_path <- "D:/new_data_pre_processed/watch"
+
+# file_pattern <- paste0(pre_process_root_path, '/*/*/watch_promptresponse_clean_*.csv')
+file_pattern <- paste0(pre_process_root_path, '/*/watch_promptresponse_clean_*.csv')
+
+```
+
+
+## Combine all the prompt response files for the participant
+```{r}
+pattern_files_found <- Sys.glob(file_pattern)
+
+combined_uema_file <- do.call(rbind, lapply(pattern_files_found, read.csv))
+```
+
+## Convert the prompt time to date time column
+```{r}
+combined_uema_file <- subset(combined_uema_file, combined_uema_file$Answer_Status == "Completed" | combined_uema_file$Answer_Status == "CompletedThenDismissed" )
+
+## if unanswered then set prompt time as the completion time?
+# combined_uema_file$Prompt_Time_only <- substr(combined_uema_file$Initial_Prompt_Local_Time, 12, 19)
+# combined_uema_file$Question_Set_Completion_Local_Time[combined_uema_file$Question_X_Answer_Text == '-NOT_ANS-'] <- combined_uema_file$Prompt_Time_only
+
+
+combined_uema_file$date_time <- paste0(combined_uema_file$Initial_Prompt_Date, " ", combined_uema_file$Question_Set_Completion_Local_Time)
+
+combined_uema_file$date_timestamp <- as.POSIXct(combined_uema_file$date_time, format="%Y-%m-%d %H:%M:%OS")
+```
+
+## Filter dates before june 1 temporarily
+```{r}
+filter_date <- as.POSIXct("2020-06-01 00:00:00.000", format="%Y-%m-%d %H:%M:%OS")
+
+combined_uema_file <- subset(combined_uema_file, combined_uema_file$date_timestamp >= filter_date)
+
+```
+
+## Remove trivia and val questions
+```{r}
+combined_uema_file <- combined_uema_file[!grepl("Val_", combined_uema_file$Question_X_ID),]
+combined_uema_file <- combined_uema_file[!grepl("trivia_", combined_uema_file$Question_X_ID),]
+combined_uema_file <- combined_uema_file[!grepl("trait_", combined_uema_file$Question_X_ID),]
+combined_uema_file <- combined_uema_file[!grepl("soc_", combined_uema_file$Question_X_ID),]
+combined_uema_file <- combined_uema_file[!grepl("activity_", combined_uema_file$Question_X_ID),]
+```
+
+
+## Score answers
+```{r}
+combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "Yes"] <- 3
+combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "Sort of"] <- 2
+combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "No"] <- 1
+# combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "-NOT_ANS-"] <- 0
+
+```
+
+## Question IDs without numbers
+```{r}
+combined_uema_file$Q_ID <- strsplit(combined_uema_file$Question_X_ID, "[[:digit:]]", perl = TRUE)
+combined_uema_file$Q_ID <- lapply(combined_uema_file$Q_ID, '[[', 1)
+combined_uema_file$Q_ID <- as.character(combined_uema_file$Q_ID)
+combined_uema_file$Q_ID <- gsub(".{1}$", "", combined_uema_file$Q_ID)
+```
+
+
+
+## Separate out a construct as a time series
+```{r}
+construct <- "nervous"
+p_id <- "sharpnessnextpouch@timestudy_com"
+
+construct_time_series_df <- subset(combined_uema_file, combined_uema_file$Participant_ID == p_id & combined_uema_file$Q_ID == construct)
+
+```
+
+## Compute max lag from the data subset
+```{r}
+
+construct_time_series_df <- construct_time_series_df %>% dplyr::mutate(diff_time = as.numeric(difftime(date_timestamp, lag(date_timestamp), units = "hours")))
+
+min_lag <- min(construct_time_series_df$diff_time, na.rm = TRUE)
+max_lag <- max(construct_time_series_df$diff_time, na.rm = TRUE)
+
+```
+
+
+## Try acf plotting
+```{r}
+acf_p1 <- acf(construct_time_series_df$Answer_score, lag.max = as.integer(max_lag), type = "correlation", plot = FALSE, na.action = na.pass)
+
+acf_df <- with(acf_p1, data.frame(lag, acf))
+
+```
+
+
+## get subset dataframe function
+```{r}
+get_subset_df <- function(df, p_id, construct){
+  subset_df <- subset(df, df$Q_ID == construct & df$Participant_ID == p_id)
+  return(subset_df)
+}
+```
+
+## get max time lag between the two consecutive measurements
+```{r}
+
+# global_lag_list <- c()
+
+get_max_lag <- function(df){
+  df <- df %>% dplyr::mutate(diff_time = as.numeric(difftime(date_timestamp, lag(date_timestamp), units = "hours")))
+  max_lag <- max(df$diff_time, na.rm = TRUE)
+  lags_dist <- df$diff_time
+  subset_ts <- get_partitioned_ts(df)
+  return(list(max_lag, lags_dist, subset_ts[[1]], subset_ts[[2]]))
+}
+```
+
+
+## Get acf data frame
+```{r}
+get_acf_df <- function(x, max_lag){
+  acf_obj <- acf(x$Answer_score, lag.max = as.integer(max_lag), type = "correlation", plot = FALSE, na.action = na.pass)
+  acf_obj_df <- with(acf_obj, data.frame(lag, acf))
+  return(acf_obj_df)
+}
+```
+
+
+## Function to plot acf in ggplot2 using the acf-df
+```{r}
+qacf <- function(x, conf.level = 0.95, variable) {
+ciline <- qnorm((1 - conf.level)/2)/sqrt(nrow(x))
+q <- ggplot(data = x, aes(x=lag, y=acf)) +
+  geom_bar(stat="identity")
+q <- q + geom_hline(yintercept = -ciline, color = "blue", size = 0.2)
+q <- q + geom_hline(yintercept = ciline, color = "blue", size = 0.2)
+q <- q + geom_hline(yintercept = 0, color = "red", size = 0.3)
+q <- q + ggtitle(variable)
+q <- ggplotly(q)
+return(q)
+}
+```
+
+## Plot acf
+```{r}
+acf_plot <- qacf(acf_df)
+```
+
+## Get p_id list
+```{r}
+get_p_id_list <- function(df){
+  p_id_list <- unique(df$Participant_ID)
+  return(p_id_list)
+}
+
+```
+
+
+## P_id list
+```{r}
+p_id_list <- get_p_id_list(combined_uema_file)
+```
+
+## Get construct list
+```{r}
+get_var_list <- function(p_id, df){
+  p_id_subset <- subset(df, df$Participant_ID == p_id)
+  var_list_pid <- unique(p_id_subset$Q_ID)
+  return(var_list_pid)
+}
+```
+
+## get acf plot
+```{r}
+# get_acf_plot <- function(df, p_id, variable){
+#   # print("1")
+#   subset_df <- get_subset_df(df, p_id, variable)
+#   # print(head(subset_df))
+#   # max_lag_set <- get_max_lag(subset_df)
+#   # max_lag <- max_lag_set[[1]]
+#   # global_lag_list <- max_lag_set[[2]]
+#   # print(max_lag)
+#   acf_df <- get_acf_df(subset_df, nrow(subset_df))
+#   # print(head(acf_df))
+#   acf_plot <- qacf(acf_df, 0.95, variable)
+#   return(acf_plot)
+# }
+
+
+get_acf_plot <- function(df, variable){
+  # print("1")
+  # subset_df <- get_subset_df(df, p_id, variable)
+  # print(head(subset_df))
+  # max_lag_set <- get_max_lag(subset_df)
+  # max_lag <- max_lag_set[[1]]
+  # global_lag_list <- max_lag_set[[2]]
+  # print(max_lag)
+  acf_df <- get_acf_df(df, nrow(df))
+  # print(head(acf_df))
+  acf_plot <- qacf(acf_df, 0.95, variable)
+  return(acf_plot)
+}
+
+```
+
+## get lag distribution plot
+```{r}
+
+# get_lag_distribution <- function(df, p_id, variable){
+#   subset_df <- get_subset_df(df, p_id, variable)
+#   lags_list <- get_max_lag(subset_df)[[2]]
+#   lags_list <- as.data.frame(lags_list)
+#   names(lags_list) <- "Lags"
+#   q <- ggplot(lags_list, aes(x=Lags)) +
+#     geom_histogram(binwidth = 1.0) +
+#     ggtitle("Lag (hours) between consecutive measurements")
+#   q <- ggplotly(q)
+#   return(q)
+# }
+
+get_lag_distribution <- function(lags_list){
+  # subset_df <- get_subset_df(df, p_id, variable)
+  # lags_list <- get_max_lag(subset_df)[[2]]
+  lags_list <- as.data.frame(lags_list)
+  names(lags_list) <- "Lags"
+  q <- ggplot(lags_list, aes(x=Lags)) +
+    geom_histogram(binwidth = 1.0) +
+    ggtitle("Lag (hours) between consecutive measurements")
+  q <- ggplotly(q)
+}
+
+
+```
+
+## Decribe responses for the subset df
+```{r}
+get_descriptives <- function(df){
+  answer_mean <- as.character(paste0("Mean: ",mean(df$Answer_score)))
+  answer_sd <- as.character(paste0("SD: ", sd(df$Answer_score)))
+  answer_dist <- table(df$Answer_score)
+  n_row <- as.character(paste0("Total observations: ", nrow(df)))
+  return(list(n_row, answer_dist))
+}
+```
+
+
+
+## get partitioned dataframes
+```{r}
+get_partitioned_ts <- function(df){
+  high_res_df <- subset(df, df$diff_time <= 3.0)
+  low_res_df <- subset(df, df$diff_time > 3.0)
+  return(list(high_res_df, low_res_df))
+}
+```
+
+
+
+## Set up shiny app
+```{r}
+
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+  
+  # Application title
+  titlePanel("micro-EMA autocorrelation"),
+  
+  # Sidebar with dropdown
+  
+  sidebarLayout(
+    sidebarPanel(
+      # selectInput(inputId = "p_id", choices = p_id_list,
+      #             label = "Select date", multiple = FALSE),
+      # selectInput(inputId = "date", choices = date_list_p_id,
+      #             label = "Select date", multiple = FALSE)
+      uiOutput("p_id"),
+      uiOutput("variable")
+    ),
+    # Show a plot of the generated distribution
+    mainPanel(
+      plotlyOutput("Plot_acf"),
+      fluidRow(
+        splitLayout(style = "border: 1px solid silver:", # cellWidths = c(300,300),
+        plotlyOutput("Plot_lags"),
+        plotlyOutput("Plot_high_res"),
+        plotlyOutput("Plot_low_res")
+      )
+      ),
+      verbatimTextOutput("summary")
+    )
+    )
+  )
+
+
+server <- function(input, output) {
+  
+  output$p_id <- renderUI({
+        selectInput("p_id", "Select a participant", choices = p_id_list)
+    })
+
+    ## input dependant on the choices in `data1`
+  output$variable <- renderUI({
+        selectInput("variable", "Select a variable", choices = c(get_var_list(input$p_id, combined_uema_file)))
+    })
+  
+  subset_df <- reactive({
+    get_subset_df(combined_uema_file, input$p_id, input$variable)
+  })
+  
+  lag_components <- reactive({
+    get_max_lag(subset_df())
+  })
+  
+  output$Plot_acf <- renderPlotly({
+    # get_acf_plot(combined_uema_file, input$p_id, input$variable)
+    get_acf_plot(subset_df(), paste("Construct: ", input$variable))
+  })
+  
+  output$Plot_lags <- renderPlotly({
+    # lag_list <- get_max_lag(get_subset_df(combined_uema_file, input$p_id, input$variable)[[2]])
+    # get_lag_distribution(combined_uema_file, input$p_id, input$variable)
+    get_lag_distribution(lag_components()[[2]])
+  })
+  
+ # p_id_var_subset <- get_subset_df(combined_uema_file, input$p_id, input$variable)
+ # res_subset_ts_vals <- get_max_lag(p_id_var_subset)
+ #  
+  output$Plot_high_res <- renderPlotly({
+    get_acf_plot(lag_components()[[3]], "Shorter lags (< 3 hrs.)")
+  })
+
+  output$Plot_low_res <- renderPlotly({
+    get_acf_plot(lag_components()[[4]], "Longer lags (> 3 hrs.)")
+  })
+  
+  output$summary <- renderPrint({
+    get_descriptives(subset_df())
+  })
+  
+
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+
+## Plot participant vs item response distribution
+```{r}
+# Plot answer score histograms with n X m facet: n --> p_id and m --> contruct
+
+user_of_interest <- "sharpnessnextpouch@timestudy_com"
+user_df <- subset(combined_uema_file, combined_uema_file$Participant_ID == user_of_interest)
+
+hour_plot_hist_normalized <- ggplot(data=user_df, aes(Answer_score, fill=Q_ID)) +
+  geom_histogram(binwidth = 1, aes(y=..density..)) +
+  scale_x_continuous(breaks=seq(1,3,1)) +
+  scale_y_continuous(breaks=seq(0,1,0.5)) +
+  theme(legend.position = "none") +
+  ggtitle(paste0("Response distribution for: ", user_of_interest)) +
+  facet_wrap(~Q_ID, ncol = 5)
+
+```
+
+## Create functions needed to generate the plot
+```{r}
+get_user_subset <- function(df, p_id){
+  subset_df <- subset(df, df$Participant_ID == p_id)
+  return(subset_df)
+}
+
+```
+
+Now create a plot generator function
+```{r}
+get_resp_dist_plot <- function(df, p_id, title_text){
+  plot_hist <- ggplot(data=df, aes(Answer_score)) +
+  geom_histogram(binwidth = 1) +
+  scale_x_continuous(breaks=seq(1,3,1)) +
+  # scale_y_continuous(breaks=seq(0,1,0.5)) +
+  theme(legend.position = "none") +
+  theme(strip.text.x = element_text(size = 15, colour = "black")) +
+  ggtitle(paste0(p_id, ": ",title_text)) +
+  facet_wrap(~Q_ID, ncol = 5)
+  # plot_hist <- ggplotly(plot_hist) %>%
+  # layout(margin=list(r=100, l=70, t=20, b=1))
+  return(plot_hist)
+}
+```
+
+## get the list of Q_IDs
+```{r}
+get_ques_list <- function(df){
+  q_list <- unique(df$Q_ID)
+  return(q_list)
+}
+```
+
+## Get q_id and question text map:
+```{r}
+
+q_ids <- c("alone","burden","control", "demands", "energy", "excite", "family", "fatigue", "feel_eat", "feel_exer", "feel_sit", "focus", "friend", "frust", "happy", "hunger", "int_eat", "int_exer", "int_sed", "nervous", "pain", "proc", "prod", "relax", "routine", "sad", "sleep", "stress", "tense", "tired")
+
+qs <- c("Alone right now?","Workload increasing?", "Feeling in control?", "Juggling several tasks?", "Feeling energetic?", "Feeling excited?", "With family member(s) now?", "Feeling fatigued", "Feel like eating healthy?", "Feel like exercising?", "Feel like sitting less?", "Feeling focused?", "With friend(s) now?", "Feeling frustrated?", "Feeling happy?", "Feeling hungry?", "Intend to eat healthy today?", "Intend to exercise today?", "Intend to sit less today?", "Feeling nervous?", "In pain/sickness?", "Procrastinating today?", "Feeling productive today?", "Feeling relaxed?", "On usual routine today?", "Feeling sad", "Slept well yesterday?", "Feeling stressed?","feeling tense?", "Feeling tired?")
+
+q_id_text_df <- data.frame(row.names= q_ids, val=qs)
+
+
+```
+
+
+## get distribution specific metrics for each question
+```{r}
+
+# print_df_wide <- data.frame()
+get_dist_metrics <- function(df){
+  '%notin%' <- Negate('%in%')
+  df <- subset(df, df$Question_X_Answer_Text != "-NOT_ANS-")
+  df_long <- as.data.frame(table(df$Q_ID, df$Question_X_Answer_Text))
+  # View(df_long)
+  df_wide <- dcast(df_long, Var1 ~ Var2, value.var = "Freq")
+  names(df_wide) <- c("Q_ID", "NO", "SORT_OF", "YES")
+  temp_df <- subset(df_wide, df_wide$Q_ID != "pain")
+  # View(temp_df)
+  # print(head(temp_df))
+  temp_df <- temp_df[order(-temp_df$NO), ]
+  skewed_ques_no <- as.character(temp_df$Q_ID[1])
+  # print(skewed_ques_no)
+  temp_df <- temp_df[order(-temp_df$YES), ]
+  skewed_ques_yes <- as.character(temp_df$Q_ID[1])
+  temp_df <- temp_df[order(-temp_df$SORT_OF), ]
+  normal_ques_1 <- as.character(temp_df$Q_ID[1])
+  normal_ques_2 <- as.character(temp_df$Q_ID[2])
+  ques_list <- c(skewed_ques_no, skewed_ques_yes, normal_ques_1, normal_ques_2)
+  smaller_df <- subset(temp_df, temp_df$Q_ID %notin% ques_list)
+  ques_rows <- smaller_df[sample(nrow(smaller_df), 2), ]
+  other_ques_1 <- as.character(ques_rows$Q_ID[1])
+  other_ques_2 <- as.character(ques_rows$Q_ID[2])
+  ques_list <- c(ques_list, other_ques_1, other_ques_2)
+  ques_list_final <- c()
+  for(ques in ques_list){
+    ques_list_final <- c(ques_list_final, q_id_text_df[ques, ])
+  }
+  return(ques_list_final)
+}
+```
+
+
+## generate text for interview
+```{r}
+generate_interview_text <- function(ques_list){
+  header_text = "Answering pattern to ask the participant during interview \n"
+  answer_no_pretext = "[Q1] Largely answered no for: "
+  answer_yes_pretext = "[Q2] largely answered yes for: "
+  normal_pretext = "[Q3 and Q4] Answered normally for: "
+  other_pretext = "[Q5 and Q6] Other questions to ask about: "
+  final_text = cat(header_text, answer_no_pretext, ques_list[[1]], "\n", answer_yes_pretext, ques_list[[2]], "\n", normal_pretext, ques_list[[3]], " & ", ques_list[[4]], 
+                      "\n", other_pretext, ques_list[[5]], " & ", ques_list[[6]], "\n")
+  return(final_text)
+}
+```
+
+
+## Split p_df into two halves
+```{r}
+split_p_df <- function(df, p_id){
+  p_df <- get_user_subset(df, p_id)
+  total_obs <- nrow(p_df)
+  start_date_time <- p_df$date_timestamp[1]
+  end_date_time <- p_df$date_timestamp[total_obs]
+  total_time_diff <- as.numeric(difftime(end_date_time, start_date_time, units = "secs"))
+  mid_point_time <- start_date_time + (total_time_diff/2)
+  part1_df <- subset(p_df, p_df$date_timestamp >= start_date_time & p_df$date_timestamp < mid_point_time)
+  part2_df <- subset(p_df, p_df$date_timestamp >= mid_point_time & p_df$date_timestamp <= end_date_time)
+  return(list(part1_df, part2_df))
+}
+```
+
+## Set up a new shiny app for p_id distribution
+```{r}
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+  
+  # Application title
+  titlePanel("micro-EMA responses"),
+  
+  # Sidebar with dropdown
+  fluidRow(column(4,
+                  uiOutput("p_id")
+  ),
+    
+  ),
+  hr(),
+   fluidRow(
+        splitLayout(style = "border: 1px solid silver:", # cellWidths = c(300,300),
+        plotOutput("Plot_resp_dist", width = "500px", height = "1000px"),
+        plotOutput("Plot_part1", width = "500px", height = "1000px"),
+        plotOutput("Plot_part2", width = "500px", height = "1000px"),
+        verbatimTextOutput("summary")
+      )
+   )
+  # plotOutput("Plot_resp_dist", width = "500px", height = "1000px"),
+  # verbatimTextOutput("summary")
+  
+  # sidebarLayout(
+  #   sidebarPanel(
+  #     # selectInput(inputId = "p_id", choices = p_id_list,
+  #     #             label = "Select date", multiple = FALSE),
+  #     # selectInput(inputId = "date", choices = date_list_p_id,
+  #     #             label = "Select date", multiple = FALSE)
+  #     uiOutput("p_id"),
+  #   ),
+  #   # Show a plot of the generated distribution
+  #   mainPanel(
+  #     plotlyOutput("Plot_resp_dist")
+  #   )
+  #   )
+  )
+
+
+server <- function(input, output) {
+  
+  output$p_id <- renderUI({
+        selectInput("p_id", "Select a participant", choices = p_id_list)
+    })
+  
+  user_subset_df <- reactive({
+    get_user_subset(combined_uema_file, input$p_id)
+  })
+  
+  question_list_of_interest <- reactive({
+    get_dist_metrics(user_subset_df())
+  })
+  
+  partitioned_dfs <- reactive({
+    split_p_df(combined_uema_file, input$p_id)
+  })
+
+  
+  output$Plot_resp_dist <- renderPlot({
+    # get_acf_plot(combined_uema_file, input$p_id, input$variable)
+    get_resp_dist_plot(user_subset_df(), input$p_id, "All days")
+  })
+  
+  output$Plot_part1 <- renderPlot({
+    # get_acf_plot(combined_uema_file, input$p_id, input$variable)
+    get_resp_dist_plot(partitioned_dfs()[[1]], input$p_id, "First half")
+  })
+  
+  output$Plot_part2 <- renderPlot({
+    # get_acf_plot(combined_uema_file, input$p_id, input$variable)
+    get_resp_dist_plot(partitioned_dfs()[[2]], input$p_id, "Second half")
+  })
+  
+  output$summary <- renderPrint({
+    generate_interview_text(question_list_of_interest())
+  })
+  
+
+}
+
+shinyApp(ui = ui, server = server)
+```
+
