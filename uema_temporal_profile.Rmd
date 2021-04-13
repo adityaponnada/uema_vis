@@ -20,3 +20,31 @@ library(psych)
 
 ```
 
+# Read the combined uEMA response file
+
+Get the root file location and construct user paths from it
+```{r}
+# pre_process_root_path <- "D:/Intermediate_TIME_files/intermediate_file"
+pre_process_root_path <- "D:/new_data_pre_processed/watch"
+
+# file_pattern <- paste0(pre_process_root_path, '/*/*/watch_promptresponse_clean_*.csv')
+file_pattern <- paste0(pre_process_root_path, '/*/watch_promptresponse_clean_*.csv')
+
+```
+
+
+## Combine all the prompt response files for the participant
+```{r}
+pattern_files_found <- Sys.glob(file_pattern)
+
+combined_uema_file <- do.call(rbind, lapply(pattern_files_found, read.csv))
+```
+
+## Read the combined daily report file
+```{r}
+
+combined_report_file = paste0('D:/new_data_pre_processed', '/combined_report_N70.csv')
+combined_report_df <- read.csv(combined_report_file, header = TRUE, sep = ',')
+
+```
+
