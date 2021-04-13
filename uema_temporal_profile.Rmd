@@ -218,7 +218,7 @@ get_slope_type <- function(slist, vlist){
     if (all(diff(slist) <= 0)) {
       slope_type = "Accumulation"
     } else if (all(diff(slist) >= 0)){
-      print("Satisfied")
+      # print("Satisfied")
       slope_type = "Dissipation"
     } else {
       slope_type = "Fluctuating"
