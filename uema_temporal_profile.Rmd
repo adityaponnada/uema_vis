@@ -161,7 +161,7 @@ get_uEMA_pid_var_df <- function(df, variable){
 First for the uEMA combined file
 
 ```{r}
-participant_id = "sharpnessnextpouch@timestudy_com"
+participant_id = "coynessculminatebarista@timestudy_com"
 
 subset_pid_df <- get_uEMA_pid_df(combined_uema_file, participant_id) 
 ```
@@ -215,9 +215,10 @@ get_slope_type <- function(slist, vlist){
     slope_type = "Consistent-low"
     }
   } else {
-    if (all(diff(slist)) <= 0) {
+    if (all(diff(slist) <= 0)) {
       slope_type = "Accumulation"
-    } else if (all(diff(slist)) >= 0){
+    } else if (all(diff(slist) >= 0)){
+      print("Satisfied")
       slope_type = "Dissipation"
     } else {
       slope_type = "Fluctuating"
