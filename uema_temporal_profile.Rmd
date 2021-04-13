@@ -125,7 +125,7 @@ uEMA combined file
 
 ```{r}
 
-uEMA_pid_df <- function(df, p_id){
+get_uEMA_pid_df <- function(df, p_id){
   pid_df <- subset(df, df$Participant_ID == p_id)
   return(pid_df)
 }
@@ -135,8 +135,9 @@ uEMA_pid_df <- function(df, p_id){
 Combined report file
 ```{r}
 
-report_pid_df <- function(df, p_id){
-  pid_df <- subset(df, df$Participant_ID == p_id)
+get_report_pid_df <- function(df, p_id){
+  pid_df <- subset(df, df$participant_ID == p_id)
+  pid_df <- subset(pid_df, pid_df$study_mode == "TIME")
   return(pid_df)
 }
 
@@ -147,13 +148,39 @@ uEMA combined file
 
 ```{r}
 
-uEMA_pid_var_df <- function(df, variable){
+get_uEMA_pid_var_df <- function(df, variable){
   var_df <- subset(df, df$Q_ID == variable)
   return(var_df)
 }
 
 ```
 
+# Test code for a single participant
 
+## get p-id subsets
+First for the uEMA combined file
+
+```{r}
+participant_id = "sharpnessnextpouch@timestudy_com"
+
+subset_pid_df <- get_uEMA_pid_df(combined_uema_file, participant_id) 
+```
+
+Then for the combined daily report file
+```{r}
+
+report_pid_df <- get_report_pid_df(combined_report_df, participant_id)
+
+```
+
+## add a waking period column to each response row
+```{r}
+
+for(i in 1:nrow(report_pid_df)){
+  # print(paste0(i, " _ ", report_pid_df$current_wake_time[i]))
+  subset_pid_df$wake_period[subset_pid_df$date_timestamp >= report_pid_df$current_wake_time[i] & subset_pid_df$date_timestamp <= report_pid_df$current_sleep_time[i]] <- paste0("Wake_period_", i)
+}
+
+```
 
 
