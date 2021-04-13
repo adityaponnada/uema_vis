@@ -183,4 +183,95 @@ for(i in 1:nrow(report_pid_df)){
 
 ```
 
+## Remove CS microEMA
+```{r}
+subset_pid_df <- subset(subset_pid_df, subset_pid_df$Q_ID != "activity")
+```
+
+
+## Get a list of relevant construct/variable names
+```{r}
+var_list <- unique(subset_pid_df$Q_ID)
+wake_period_list <- unique(subset_pid_df$wake_period)
+
+```
+
+## Create a slope type function
+```{r}
+
+get_slope_type <- function(slist, vlist){
+  slope_type = ""
+  print(slist)
+  print(vlist)
+  print(length(unique(vlist)))
+  print(unique(vlist))
+  
+  if (length(unique(vlist)) == 1){
+    if (unique(vlist) == 3){
+    slope_type = "Consistent-high"
+    } else if (unique(vlist) == 2) {
+    slope_type = "Consistent-medium"
+    } else if (unique(vlist) == 1){
+    slope_type = "Consistent-low"
+    }
+  } else {
+    if (all(diff(slist)) <= 0) {
+      slope_type = "Accumulation"
+    } else if (all(diff(slist)) >= 0){
+      slope_type = "Dissipation"
+    } else {
+      slope_type = "Fluctuating"
+    }
+  }
+  return(slope_type)
+}
+
+```
+
+## Create function to get trajectory
+```{r}
+
+get_var_profile <- function(df, variable, wake_period_name){
+  wake_subset_df <- subset(df, df$wake_period == wake_period_name & df$Q_ID == variable)
+  # wake_subset_df <- subset(wake_subset_df, wake_subset_df$Q_ID == variable)
+  # print(wake_subset_df)
+  if (nrow(wake_subset_df) != 0){
+    slope_list <- c()
+    val_list = wake_subset_df$Answer_score
+    print(val_list)
+    for (i in 1:nrow(wake_subset_df) - 1){
+      del_y <- wake_subset_df$Answer_score[i + 1] - wake_subset_df$Answer_score[i]
+      del_x <- as.numeric(difftime(wake_subset_df$date_timestamp[i + 1], wake_subset_df$date_timestamp[i], units = "hours"))
+      slope <- del_y/del_x
+      slope_list <- c(slope_list, slope)
+    }
+    profile_type <- get_slope_type(slope_list, val_list)
+    return(profile_type)
+  } else {
+    return(NA)
+  }
+}
+
+```
+
+## Generate temporal profile for each variable for p_id
+```{r}
+
+var_profile_df <- data.frame()
+
+for (i in 1:length(wake_period_list)){
+  
+  var_profile_df$p_id[1] <- subset_pid_df$Participant_ID[1]
+  var_profile_df$wake_period[1] <- wake_period_list[[i]][1]
+  for (j in 1:length(var_list)){
+    var_profile_df[, ncol(var_profile_df) + 1][i] <- get_var_profile(subset_pid_df, var_list[[j]][1], wake_period_list[[i]][1])
+    names(var_profile_df[ncol(var_profile_df)]) <- var_list[[j]][1]
+  }
+  
+}
+
+```
+
+
+
 
