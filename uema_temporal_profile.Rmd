@@ -5,26 +5,277 @@ date: "4/12/2021"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# Include libraries
+```{r}
+library(lubridate)
+library(dplyr)
+library(plyr)
+library(reshape2)
+library(plotly)
+library(ggplot2)
+library(shiny)
+library(shinycssloaders)
+library(shinydashboard)
+library(psych)
+
 ```
 
-## R Markdown
+# Read the combined uEMA response file
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Get the root file location and construct user paths from it
+```{r}
+# pre_process_root_path <- "D:/Intermediate_TIME_files/intermediate_file"
+pre_process_root_path <- "D:/new_data_pre_processed/watch"
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+# file_pattern <- paste0(pre_process_root_path, '/*/*/watch_promptresponse_clean_*.csv')
+file_pattern <- paste0(pre_process_root_path, '/*/watch_promptresponse_clean_*.csv')
 
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+## Combine all the prompt response files for the participant
+```{r}
+pattern_files_found <- Sys.glob(file_pattern)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+combined_uema_file <- do.call(rbind, lapply(pattern_files_found, read.csv))
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Read the combined daily report file
+```{r}
+
+combined_report_file = paste0('D:/new_data_pre_processed', '/combined_report_N70.csv')
+combined_report_df <- read.csv(combined_report_file, header = TRUE, sep = ',')
+
+```
+
+## Convert the prompt time to date time column
+For uEMA combined file
+
+```{r}
+combined_uema_file <- subset(combined_uema_file, combined_uema_file$Answer_Status == "Completed" | combined_uema_file$Answer_Status == "CompletedThenDismissed" )
+combined_uema_file <- subset(combined_uema_file, combined_uema_file$Question_X_Answer_Text != "-NOT_ANS-")
+
+## if unanswered then set prompt time as the completion time?
+# combined_uema_file$Prompt_Time_only <- substr(combined_uema_file$Initial_Prompt_Local_Time, 12, 19)
+# combined_uema_file$Question_Set_Completion_Local_Time[combined_uema_file$Question_X_Answer_Text == '-NOT_ANS-'] <- combined_uema_file$Prompt_Time_only
+
+
+combined_uema_file$date_time <- paste0(combined_uema_file$Initial_Prompt_Date, " ", combined_uema_file$Question_Set_Completion_Local_Time)
+
+combined_uema_file$date_timestamp <- as.POSIXct(combined_uema_file$date_time, format="%Y-%m-%d %H:%M:%OS")
+```
+
+## Filter dates before june 1 temporarily
+For uEMA combined file
+
+```{r}
+filter_date <- as.POSIXct("2020-06-01 00:00:00.000", format="%Y-%m-%d %H:%M:%OS")
+
+combined_uema_file <- subset(combined_uema_file, combined_uema_file$date_timestamp >= filter_date)
+
+```
+
+## Remove trivia and val questions
+uEMA combined file
+
+```{r}
+combined_uema_file <- combined_uema_file[!grepl("Val_", combined_uema_file$Question_X_ID),]
+combined_uema_file <- combined_uema_file[!grepl("trivia_", combined_uema_file$Question_X_ID),]
+combined_uema_file <- combined_uema_file[!grepl("trait_", combined_uema_file$Question_X_ID),]
+combined_uema_file <- combined_uema_file[!grepl("soc_", combined_uema_file$Question_X_ID),]
+```
+
+
+## Score answers
+uEMA combined file
+
+```{r}
+combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "Yes"] <- 3
+combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "Sort of"] <- 2
+combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "No"] <- 1
+# combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "-NOT_ANS-"] <- 0
+
+```
+
+
+## Create a Q_D column without the numbers
+uEMA combined file
+
+```{r}
+combined_uema_file$Q_ID <- strsplit(combined_uema_file$Question_X_ID, "[[:digit:]]", perl = TRUE)
+combined_uema_file$Q_ID <- lapply(combined_uema_file$Q_ID, '[[', 1)
+combined_uema_file$Q_ID <- as.character(combined_uema_file$Q_ID)
+combined_uema_file$Q_ID <- gsub(".{1}$", "", combined_uema_file$Q_ID)
+```
+
+
+
+## Convert sleep wake times in daily report to datetime
+Combined daily report file
+
+```{r}
+
+combined_report_df$current_wake_time <- as.POSIXct(combined_report_df$current_wake_time, format="%Y-%m-%d %H:%M:%S")
+combined_report_df$current_sleep_time <- as.POSIXct(combined_report_df$current_sleep_time, format="%Y-%m-%d %H:%M:%S")
+
+```
+
+## create a subset for participant
+uEMA combined file
+
+```{r}
+
+get_uEMA_pid_df <- function(df, p_id){
+  pid_df <- subset(df, df$Participant_ID == p_id)
+  return(pid_df)
+}
+
+```
+
+Combined report file
+```{r}
+
+get_report_pid_df <- function(df, p_id){
+  pid_df <- subset(df, df$participant_ID == p_id)
+  pid_df <- subset(pid_df, pid_df$study_mode == "TIME")
+  return(pid_df)
+}
+
+```
+
+## Create a subset for the construct
+uEMA combined file
+
+```{r}
+
+get_uEMA_pid_var_df <- function(df, variable){
+  var_df <- subset(df, df$Q_ID == variable)
+  return(var_df)
+}
+
+```
+
+# Test code for a single participant
+
+## get p-id subsets
+First for the uEMA combined file
+
+```{r}
+participant_id = "sharpnessnextpouch@timestudy_com"
+
+subset_pid_df <- get_uEMA_pid_df(combined_uema_file, participant_id) 
+```
+
+Then for the combined daily report file
+```{r}
+
+report_pid_df <- get_report_pid_df(combined_report_df, participant_id)
+
+```
+
+## add a waking period column to each response row
+```{r}
+
+for(i in 1:nrow(report_pid_df)){
+  # print(paste0(i, " _ ", report_pid_df$current_wake_time[i]))
+  subset_pid_df$wake_period[subset_pid_df$date_timestamp >= report_pid_df$current_wake_time[i] & subset_pid_df$date_timestamp <= report_pid_df$current_sleep_time[i]] <- paste0("Wake_period_", i)
+}
+
+```
+
+## Remove CS microEMA
+```{r}
+subset_pid_df <- subset(subset_pid_df, subset_pid_df$Q_ID != "activity")
+```
+
+
+## Get a list of relevant construct/variable names
+```{r}
+var_list <- unique(subset_pid_df$Q_ID)
+wake_period_list <- unique(subset_pid_df$wake_period)
+
+```
+
+## Create a slope type function
+```{r}
+
+get_slope_type <- function(slist, vlist){
+  slope_type = ""
+  # print(slist)
+  # print(vlist)
+  # print(length(unique(vlist)))
+  # print(unique(vlist))
+  
+  if (length(unique(vlist)) == 1){
+    if (unique(vlist) == 3){
+    slope_type = "Consistent-high"
+    } else if (unique(vlist) == 2) {
+    slope_type = "Consistent-medium"
+    } else if (unique(vlist) == 1){
+    slope_type = "Consistent-low"
+    }
+  } else {
+    if (all(diff(slist)) <= 0) {
+      slope_type = "Accumulation"
+    } else if (all(diff(slist)) >= 0){
+      slope_type = "Dissipation"
+    } else {
+      slope_type = "Fluctuating"
+    }
+  }
+  return(slope_type)
+}
+
+```
+
+## Create function to get trajectory
+```{r}
+
+get_var_profile <- function(df, variable, wake_period_name){
+  wake_subset_df <- subset(df, df$wake_period == wake_period_name & df$Q_ID == variable)
+  # wake_subset_df <- subset(wake_subset_df, wake_subset_df$Q_ID == variable)
+  # print(wake_subset_df)
+  if (nrow(wake_subset_df) != 0){
+    slope_list <- c()
+    val_list = wake_subset_df$Answer_score
+    # print(val_list)
+    for (i in 1:nrow(wake_subset_df) - 1){
+      del_y <- wake_subset_df$Answer_score[i + 1] - wake_subset_df$Answer_score[i]
+      del_x <- as.numeric(difftime(wake_subset_df$date_timestamp[i + 1], wake_subset_df$date_timestamp[i], units = "hours"))
+      slope <- del_y/del_x
+      slope_list <- c(slope_list, slope)
+    }
+    profile_type <- get_slope_type(slope_list, val_list)
+    return(profile_type)
+  } else {
+    return(NA)
+  }
+}
+
+```
+
+## Generate temporal profile for each variable for p_id
+```{r}
+
+var_profile_df <- matrix(ncol = length(var_list) + 2, nrow = length(wake_period_list))
+
+for (i in 1:length(wake_period_list)){
+  
+  var_profile_df[i, 1] <- participant_id
+  var_profile_df[i, 2] <- wake_period_list[[i]][1]
+  for (j in 1:length(var_list)){
+    var_profile_df[i, j + 2] <- get_var_profile(subset_pid_df, var_list[[j]][1], wake_period_list[[i]][1])
+  }
+  
+}
+
+var_profile_df <- as.data.frame(var_profile_df)
+col_names <- c("p_id", "wake_period", var_list)
+
+names(var_profile_df) <- col_names
+
+```
+
+
+
+
