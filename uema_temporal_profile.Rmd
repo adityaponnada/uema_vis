@@ -201,10 +201,10 @@ wake_period_list <- unique(subset_pid_df$wake_period)
 
 get_slope_type <- function(slist, vlist){
   slope_type = ""
-  print(slist)
-  print(vlist)
-  print(length(unique(vlist)))
-  print(unique(vlist))
+  # print(slist)
+  # print(vlist)
+  # print(length(unique(vlist)))
+  # print(unique(vlist))
   
   if (length(unique(vlist)) == 1){
     if (unique(vlist) == 3){
@@ -238,7 +238,7 @@ get_var_profile <- function(df, variable, wake_period_name){
   if (nrow(wake_subset_df) != 0){
     slope_list <- c()
     val_list = wake_subset_df$Answer_score
-    print(val_list)
+    # print(val_list)
     for (i in 1:nrow(wake_subset_df) - 1){
       del_y <- wake_subset_df$Answer_score[i + 1] - wake_subset_df$Answer_score[i]
       del_x <- as.numeric(difftime(wake_subset_df$date_timestamp[i + 1], wake_subset_df$date_timestamp[i], units = "hours"))
@@ -257,18 +257,22 @@ get_var_profile <- function(df, variable, wake_period_name){
 ## Generate temporal profile for each variable for p_id
 ```{r}
 
-var_profile_df <- data.frame()
+var_profile_df <- matrix(ncol = length(var_list) + 2, nrow = length(wake_period_list))
 
 for (i in 1:length(wake_period_list)){
   
-  var_profile_df$p_id[1] <- subset_pid_df$Participant_ID[1]
-  var_profile_df$wake_period[1] <- wake_period_list[[i]][1]
+  var_profile_df[i, 1] <- participant_id
+  var_profile_df[i, 2] <- wake_period_list[[i]][1]
   for (j in 1:length(var_list)){
-    var_profile_df[, ncol(var_profile_df) + 1][i] <- get_var_profile(subset_pid_df, var_list[[j]][1], wake_period_list[[i]][1])
-    names(var_profile_df[ncol(var_profile_df)]) <- var_list[[j]][1]
+    var_profile_df[i, j + 2] <- get_var_profile(subset_pid_df, var_list[[j]][1], wake_period_list[[i]][1])
   }
   
 }
+
+var_profile_df <- as.data.frame(var_profile_df)
+col_names <- c("p_id", "wake_period", var_list)
+
+names(var_profile_df) <- col_names
 
 ```
 
