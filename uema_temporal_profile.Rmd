@@ -48,3 +48,112 @@ combined_report_df <- read.csv(combined_report_file, header = TRUE, sep = ',')
 
 ```
 
+## Convert the prompt time to date time column
+For uEMA combined file
+
+```{r}
+combined_uema_file <- subset(combined_uema_file, combined_uema_file$Answer_Status == "Completed" | combined_uema_file$Answer_Status == "CompletedThenDismissed" )
+combined_uema_file <- subset(combined_uema_file, combined_uema_file$Question_X_Answer_Text != "-NOT_ANS-")
+
+## if unanswered then set prompt time as the completion time?
+# combined_uema_file$Prompt_Time_only <- substr(combined_uema_file$Initial_Prompt_Local_Time, 12, 19)
+# combined_uema_file$Question_Set_Completion_Local_Time[combined_uema_file$Question_X_Answer_Text == '-NOT_ANS-'] <- combined_uema_file$Prompt_Time_only
+
+
+combined_uema_file$date_time <- paste0(combined_uema_file$Initial_Prompt_Date, " ", combined_uema_file$Question_Set_Completion_Local_Time)
+
+combined_uema_file$date_timestamp <- as.POSIXct(combined_uema_file$date_time, format="%Y-%m-%d %H:%M:%OS")
+```
+
+## Filter dates before june 1 temporarily
+For uEMA combined file
+
+```{r}
+filter_date <- as.POSIXct("2020-06-01 00:00:00.000", format="%Y-%m-%d %H:%M:%OS")
+
+combined_uema_file <- subset(combined_uema_file, combined_uema_file$date_timestamp >= filter_date)
+
+```
+
+## Remove trivia and val questions
+uEMA combined file
+
+```{r}
+combined_uema_file <- combined_uema_file[!grepl("Val_", combined_uema_file$Question_X_ID),]
+combined_uema_file <- combined_uema_file[!grepl("trivia_", combined_uema_file$Question_X_ID),]
+combined_uema_file <- combined_uema_file[!grepl("trait_", combined_uema_file$Question_X_ID),]
+combined_uema_file <- combined_uema_file[!grepl("soc_", combined_uema_file$Question_X_ID),]
+```
+
+
+## Score answers
+uEMA combined file
+
+```{r}
+combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "Yes"] <- 3
+combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "Sort of"] <- 2
+combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "No"] <- 1
+# combined_uema_file$Answer_score[combined_uema_file$Question_X_Answer_Text == "-NOT_ANS-"] <- 0
+
+```
+
+
+## Create a Q_D column without the numbers
+uEMA combined file
+
+```{r}
+combined_uema_file$Q_ID <- strsplit(combined_uema_file$Question_X_ID, "[[:digit:]]", perl = TRUE)
+combined_uema_file$Q_ID <- lapply(combined_uema_file$Q_ID, '[[', 1)
+combined_uema_file$Q_ID <- as.character(combined_uema_file$Q_ID)
+combined_uema_file$Q_ID <- gsub(".{1}$", "", combined_uema_file$Q_ID)
+```
+
+
+
+## Convert sleep wake times in daily report to datetime
+Combined daily report file
+
+```{r}
+
+combined_report_df$current_wake_time <- as.POSIXct(combined_report_df$current_wake_time, format="%Y-%m-%d %H:%M:%S")
+combined_report_df$current_sleep_time <- as.POSIXct(combined_report_df$current_sleep_time, format="%Y-%m-%d %H:%M:%S")
+
+```
+
+## create a subset for participant
+uEMA combined file
+
+```{r}
+
+uEMA_pid_df <- function(df, p_id){
+  pid_df <- subset(df, df$Participant_ID == p_id)
+  return(pid_df)
+}
+
+```
+
+Combined report file
+```{r}
+
+report_pid_df <- function(df, p_id){
+  pid_df <- subset(df, df$Participant_ID == p_id)
+  return(pid_df)
+}
+
+```
+
+## Create a subset for the construct
+uEMA combined file
+
+```{r}
+
+uEMA_pid_var_df <- function(df, variable){
+  var_df <- subset(df, df$Q_ID == variable)
+  return(var_df)
+}
+
+```
+
+
+
+
