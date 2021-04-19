@@ -161,7 +161,7 @@ get_uEMA_pid_var_df <- function(df, variable){
 First for the uEMA combined file
 
 ```{r}
-participant_id = "coynessculminatebarista@timestudy_com"
+participant_id = "neutergoldfishsworn@timestudy_com"
 
 subset_pid_df <- get_uEMA_pid_df(combined_uema_file, participant_id) 
 ```
@@ -277,6 +277,29 @@ names(var_profile_df) <- col_names
 
 ```
 
+## temporal profile distribution
+```{r}
+
+# ds1 <- data.frame(var1 = as.character(c("7","10","11","4", "7","10","11","4"))) 
+# ds2 <- data.frame(var2 = c("4","4","7","7", "7","10","11","4"))
+# 
+# plot.df <- cbind(ds1, ds2)
+temp_df <- var_profile_df[, -c(1,2)]
+plot.df <- reshape2::melt(temp_df, id.vars = NULL)
+plot.df <- na.omit(plot.df)
+
+ggplot(plot.df) + geom_bar(aes(x = value)) + facet_wrap(~variable, ncol = 5) + theme(axis.text.x = element_text(angle = 90))
 
 
+
+```
+
+
+## Set up a shiny app
+```{r}
+
+
+
+
+```
 
