@@ -196,6 +196,27 @@ wake_period_list <- unique(subset_pid_df$wake_period)
 
 ```
 
+## get p_id_subset
+```{r}
+
+prepare_pid_subset <- function(df, report_df, p_id) {
+  pid_subset_df <- get_uEMA_pid_df(df, p_id)
+  pid_report_df <- get_report_pid_df(report_df, p_id)
+  pid_subset_df <- subset(pid_subset_df, pid_subset_df$Q_ID != "activity")
+  
+  for(i in 1:nrow(pid_report_df)){
+  # print(paste0(i, " _ ", report_pid_df$current_wake_time[i]))
+  pid_subset_df$wake_period[pid_subset_df$date_timestamp >= pid_report_df$current_wake_time[i] & pid_subset_df$date_timestamp <= pid_report_df$current_sleep_time[i]] <- paste0("Wake_period_", i)
+  }
+  
+  return(pid_subset_df)
+  
+}
+
+```
+
+
+
 ## Create a slope type function
 ```{r}
 
@@ -255,17 +276,42 @@ get_var_profile <- function(df, variable, wake_period_name){
 
 ```
 
-## Generate temporal profile for each variable for p_id
+## Create funtion to get variance
 ```{r}
 
-var_profile_df <- matrix(ncol = length(var_list) + 2, nrow = length(wake_period_list))
+get_variance <- function(df, variable, wake_period_name){
+  wake_subset_df <- subset(df, df$wake_period == wake_period_name & df$Q_ID == variable)
+  # wake_subset_df <- subset(wake_subset_df, wake_subset_df$Q_ID == variable)
+  # print(wake_subset_df)
+  if (nrow(wake_subset_df) != 0){
+    val_list = wake_subset_df$Answer_score
+    # print(val_list)
+    variance <- var(val_list)
+    return(variance)
+  } else {
+    return(NA)
+  }
+}
 
-for (i in 1:length(wake_period_list)){
+```
+
+
+## Generate variance profile for each variable for p_id
+```{r}
+
+get_variance_df <- function(df, p_id){
   
-  var_profile_df[i, 1] <- participant_id
-  var_profile_df[i, 2] <- wake_period_list[[i]][1]
-  for (j in 1:length(var_list)){
-    var_profile_df[i, j + 2] <- get_var_profile(subset_pid_df, var_list[[j]][1], wake_period_list[[i]][1])
+  var_list_local <- unique(df$Q_ID)
+  wake_period_list_local <- unique(df$wake_period)
+  
+  var_profile_df <- matrix(ncol = length(var_list_local) + 2, nrow = length(wake_period_list))
+
+for (i in 1:length(wake_period_list_local)){
+  
+  var_profile_df[i, 1] <- p_id
+  var_profile_df[i, 2] <- wake_period_list_local[[i]][1]
+  for (j in 1:length(var_list_local)){
+    var_profile_df[i, j + 2] <- get_variance(subset_pid_df, var_list_local[[j]][1], wake_period_list_local[[i]][1])
   }
   
 }
@@ -274,6 +320,41 @@ var_profile_df <- as.data.frame(var_profile_df)
 col_names <- c("p_id", "wake_period", var_list)
 
 names(var_profile_df) <- col_names
+return (var_profile_df)
+}
+
+
+```
+
+
+## Generate temporal profile for each variable for p_id
+```{r}
+
+get_var_profile_df <- function(df, p_id){
+  
+  var_list_local <- unique(df$Q_ID)
+  wake_period_list_local <- unique(df$wake_period)
+  
+  var_profile_df <- matrix(ncol = length(var_list_local) + 2, nrow = length(wake_period_list))
+
+for (i in 1:length(wake_period_list_local)){
+  
+  var_profile_df[i, 1] <- p_id
+  var_profile_df[i, 2] <- wake_period_list_local[[i]][1]
+  for (j in 1:length(var_list_local)){
+    var_profile_df[i, j + 2] <- get_var_profile(subset_pid_df, var_list_local[[j]][1], wake_period_list_local[[i]][1])
+  }
+  
+}
+
+var_profile_df <- as.data.frame(var_profile_df)
+col_names <- c("p_id", "wake_period", var_list)
+
+names(var_profile_df) <- col_names
+return (var_profile_df)
+}
+
+
 
 ```
 
@@ -284,12 +365,39 @@ names(var_profile_df) <- col_names
 # ds2 <- data.frame(var2 = c("4","4","7","7", "7","10","11","4"))
 # 
 # plot.df <- cbind(ds1, ds2)
-temp_df <- var_profile_df[, -c(1,2)]
+get_profile_dist_plot <- function(df){
+  temp_df <- df[, -c(1,2)]
 plot.df <- reshape2::melt(temp_df, id.vars = NULL)
 plot.df <- na.omit(plot.df)
 
-ggplot(plot.df) + geom_bar(aes(x = value)) + facet_wrap(~variable, ncol = 5) + theme(axis.text.x = element_text(angle = 90))
+dist_plot <- ggplot(plot.df) + geom_bar(aes(x = value)) + facet_wrap(~variable, ncol = 5) + theme(axis.text.x = element_text(angle = 90))
+return(dist_plot)
+}
 
+
+
+
+
+```
+
+## Get p_id_list
+```{r}
+p_id_list <- unique(combined_uema_file$Participant_ID)
+```
+
+## Test function to explore user data
+```{r}
+
+p_id <- "neutergoldfishsworn@timestudy_com"
+
+pid_subset_df <- prepare_pid_subset(combined_uema_file, combined_report_df, p_id)
+
+pid_var_profile_df <- get_var_profile_df(pid_subset_df, p_id)
+
+pid_var_dist_plot <- get_profile_dist_plot(pid_var_profile_df)
+
+## For varianc eonly
+pid_variance_df <- get_variance_df(pid_subset_df, p_id)
 
 
 ```
@@ -298,7 +406,50 @@ ggplot(plot.df) + geom_bar(aes(x = value)) + facet_wrap(~variable, ncol = 5) + t
 ## Set up a shiny app
 ```{r}
 
+ui <- fluidPage(
+  
+  # Application title
+  titlePanel("micro-EMA responses"),
+  
+  # Sidebar with dropdown
+  fluidRow(column(4,
+                  uiOutput("p_id")
+  ),
+    
+  ),
+  hr(),
+   fluidRow(
+        splitLayout(style = "border: 1px solid silver:", # cellWidths = c(300,300),
+        plotOutput("plot_profile_dist", width = "500px", height = "1000px")
+      )
+   )
+  )
 
+
+server <- function(input, output) {
+  
+  output$p_id <- renderUI({
+        selectInput("p_id", "Select a participant", choices = p_id_list)
+    })
+  
+  user_subset_df <- reactive({
+    prepare_pid_subset(combined_uema_file, input$p_id)
+  })
+  
+  var_profile_df <- reactive({
+    get_var_profile_df(user_subset_df(), input$p_id)
+  })
+
+  
+  output$plot_profile_dist <- renderPlot({
+    # get_acf_plot(combined_uema_file, input$p_id, input$variable)
+    get_profile_dist_plot(var_profile_df())
+  })
+  
+
+}
+
+shinyApp(ui = ui, server = server)
 
 
 ```
