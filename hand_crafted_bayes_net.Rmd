@@ -1,0 +1,175 @@
+---
+title: "hand_crafted_bayesian_network_example"
+author: "Aditya Ponnada"
+date: "4/20/2021"
+output: html_document
+---
+
+## include libraries
+```{r}
+
+library(DAAG)
+library(bnlearn)
+library(ggplot2)
+library(visNetwork)
+
+```
+
+## load and plot sample data
+```{r}
+
+ais = DAAG::ais
+
+ggplot(ais, aes(x = sport, y = hg, fill = sport)) + geom_boxplot()
+
+```
+
+## Start by using discrete case for simplicity
+We first convert the continious variables into categorical variables
+```{r}
+# set boolean variables
+ais$high_hc <- as.factor(ais$hc > median(ais$hc))
+ais$high_hg <- as.factor(ais$hg > median(ais$hg))
+
+# create an empty graph
+structure <- empty.graph(c("high_hc", "high_hg", "sport"))
+
+# set relationships manually
+modelstring(structure) <- "[high_hc][sport][high_hg|sport:high_hc]"
+
+
+```
+
+## Plot the network structure
+```{r}
+
+plot.network <- function(structure, ht = "400px"){
+  nodes.uniq <- unique(c(structure$arcs[,1], structure$arcs[,2]))
+  nodes <- data.frame(id = nodes.uniq,
+                      label = nodes.uniq,
+                      color = "darkturquoise",
+                      shadow = TRUE)
+  edges <- data.frame(from = structure$arcs[,1],
+                      to = structure$arcs[,2],
+                      arrows = "to",
+                      smooth = TRUE,
+                      shadow = TRUE,
+                      color = "black")
+  return(visNetwork(nodes, edges, height = ht, width = "100%"))
+}
+
+```
+
+Try the plot
+```{r}
+
+# observe structure
+plot.network(structure)
+
+
+```
+
+## Model output and conditional probabilities
+```{r}
+
+ais.sub <- ais[ais$sport %in% c("Netball", "Tennis", "W_Polo"), c("high_hc", "high_hg", "sport")]
+ais.sub$sport <- factor(ais.sub$sport)
+bn.mod <- bn.fit(structure, data = ais.sub)
+bn.mod
+
+
+```
+
+## Some test queries to try out
+```{r}
+
+cat("P(high hemaglobin levels) =", cpquery(bn.mod, (high_hg=="TRUE"), TRUE), "\n") ## Why is TRUE passed as a default here??
+
+cat("P(high hemaglobin levels | play water polo and have high hematocrit ratio) =", cpquery(bn.mod, (high_hg=="TRUE"), (sport == "W_Polo" & high_hc == "TRUE")), "\n")
+
+```
+
+## Example query to check probability
+With the same model we can query the probability that an athlete plays water polo given we observe their high hemoglobin levels or the probability of having high hemoglobin levels given they play water polo.
+```{r}
+
+cat("P(Plays water polo | High HG and High HC) = " , cpquery(bn.mod, (sport == "W_Polo"), (high_hg == "TRUE" & high_hc == "TRUE")), "\n")
+
+
+```
+
+But if we did not know the hc ratio, we can sum over all the prob of hc within the cpquery
+```{r}
+
+cat("P(high hemaglobin levels | play water polo) =", cpquery(bn.mod, (high_hg=="TRUE"), (sport == "W_Polo")), "\n")
+
+```
+
+## try the same example with the continious case
+```{r}
+
+# create an empty graph
+structure <- empty.graph(c("hc", "hg", "sport"))
+# set relationships manually
+modelstring(structure) <- "[hc][sport][hg|sport:hc]"
+# subset and fit
+ais.sub <- ais[ais$sport %in% c("Netball", "Tennis", "W_Polo"), c("hc", "hg", "sport")]
+ais.sub$sport <- factor(ais.sub$sport)
+bn.mod <- bn.fit(structure, data = ais.sub)
+bn.mod
+
+```
+
+## Query the continious data bn.mod model
+```{r}
+
+cat("P(hemaglobin levels > 14 | play water polo and have high hematocrit ratio) =", cpquery(bn.mod, (hg > 14), (sport == "W_Polo" & hc > 42 )), "\n")
+
+```
+
+## Getting chained relationships
+Adding lean body mass to the equation
+```{r}
+
+# create an empty graph
+structure <- empty.graph(c("hc", "hg", "sport", "lbm"))
+# set relationships manually
+modelstring(structure) <- "[lbm][hc|lbm][sport][hg|sport:hc]"
+plot.network(structure)
+# subset and fit
+ais.sub <- ais[ais$sport %in% c("Netball", "Tennis", "W_Polo"), c("hc", "hg", "sport", "lbm")]
+ais.sub$sport <- factor(ais.sub$sport)
+bn.mod <- bn.fit(structure, data = ais.sub)
+bn.mod
+
+```
+
+## Determine network structure algorithmicly
+More suitable for large cases --> large number of samples? or large number of variables in the network? --> but more hand crafted relationships can be inserted into the structure to inform it better
+
+```{r}
+
+# learn the structure using the hill climbing algorithm and the BIC
+structure <- hc(ais.sub, score = "bic-cg")
+plot.network(structure)
+
+```
+
+## Model fit based on the algorithm derived structure
+```{r}
+bn.mod <- bn.fit(structure, data = ais.sub)
+cat("P(hemaglobin levels > 14 | play water polo and have LBM > 65 kg) =", cpquery(bn.mod, (hg > 14), (sport == "W_Polo" & lbm > 65 )), "\n")
+```
+
+## Fitting the full model
+Including all the variables after accounting for multi-colinearity
+```{r}
+
+ais.sub <- ais[, c("hc", "hg", "sport", "lbm", "rcc", "wcc", "ferr", "ht", "wt", "sex", "ssf")]
+structure <- hc(ais.sub, score = "bic-cg")
+bn.mod <- bn.fit(structure, data = ais.sub)
+plot.network(structure, ht = "600px")
+
+```
+
+
