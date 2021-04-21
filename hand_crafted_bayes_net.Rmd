@@ -15,10 +15,21 @@ library(visNetwork)
 
 ```
 
+## Test function to insert missingness in the dataframe
+```{r}
+insert_missing_data <- function(df){
+  df <- as.data.frame(lapply(df, function(cc) cc[ sample(c(TRUE, NA), prob = c(0.85, 0.15), size = length(cc), replace = TRUE) ]))
+  return (df)
+}
+```
+
+
 ## load and plot sample data
 ```{r}
 
 ais = DAAG::ais
+
+ais <- insert_missing_data(ais)
 
 ggplot(ais, aes(x = sport, y = hg, fill = sport)) + geom_boxplot()
 
@@ -28,8 +39,8 @@ ggplot(ais, aes(x = sport, y = hg, fill = sport)) + geom_boxplot()
 We first convert the continious variables into categorical variables
 ```{r}
 # set boolean variables
-ais$high_hc <- as.factor(ais$hc > median(ais$hc))
-ais$high_hg <- as.factor(ais$hg > median(ais$hg))
+ais$high_hc <- as.factor(ais$hc > median(ais$hc, na.rm = TRUE))
+ais$high_hg <- as.factor(ais$hg > median(ais$hg, na.rm = TRUE))
 
 # create an empty graph
 structure <- empty.graph(c("high_hc", "high_hg", "sport"))
@@ -145,7 +156,7 @@ bn.mod
 ```
 
 ## Determine network structure algorithmicly
-More suitable for large cases --> large number of samples? or large number of variables in the network? --> but more hand crafted relationships can be inserted into the structure to inform it better
+More suitable for large cases --> large number of samples? or large number of variables in the network? --> but more hand crafted relationships can be inserted into the structure to inform it better. Does not seem to work with missing data? Impute??
 
 ```{r}
 
