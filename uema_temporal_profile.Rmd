@@ -17,6 +17,8 @@ library(shiny)
 library(shinycssloaders)
 library(shinydashboard)
 library(psych)
+library(questionr)
+library(missMDA)
 options(digits = 2)
 
 ```
@@ -403,5 +405,19 @@ pid_variance_df <- get_variance_df(pid_subset_df, p_id)
 
 ```
 
+## Get the proportion of missing data per column
+```{r}
 
+freq.na(pid_var_profile_df)
+
+```
+
+## test impute missing categorical data
+```{r}
+
+temp_var_profile_df <- pid_var_profile_df
+
+imputeMCA(temp_var_profile_df, ncp=1, method = c("Regularized", "EM"), maxiter = 10)
+
+```
 
