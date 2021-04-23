@@ -19,6 +19,8 @@ library(shinydashboard)
 library(psych)
 library(questionr)
 library(missMDA)
+library(catnet)
+library(igraph)
 options(digits = 2)
 
 ```
@@ -307,7 +309,7 @@ get_variance_df <- function(df, p_id){
   var_list_local <- unique(df$Q_ID)
   wake_period_list_local <- unique(df$wake_period)
   
-  var_profile_df <- matrix(ncol = length(var_list_local) + 2, nrow = length(wake_period_list))
+  var_profile_df <- matrix(ncol = length(var_list_local) + 2, nrow = length(wake_period_list_local))
 
 for (i in 1:length(wake_period_list_local)){
   
@@ -334,27 +336,32 @@ return (var_profile_df)
 ```{r}
 
 get_var_profile_df <- function(df, p_id){
+  # print(paste0("P_id: ", p_id))
   
   var_list_local <- unique(df$Q_ID)
+  # print(paste0("var_list_local: ", var_list_local))
   wake_period_list_local <- unique(df$wake_period)
-  
-  var_profile_df <- matrix(ncol = length(var_list_local) + 2, nrow = length(wake_period_list))
+  # print(paste0("wake_period_list_local: ", wake_period_list_local))
+  # print(paste0("Length of wake period: ", length(wake_period_list_local)))
+  var_profile_df <- matrix(ncol = length(var_list_local) + 2, nrow = length(wake_period_list_local))
 
-for (i in 1:length(wake_period_list_local)){
-  
-  var_profile_df[i, 1] <- p_id
-  var_profile_df[i, 2] <- wake_period_list_local[[i]][1]
-  for (j in 1:length(var_list_local)){
-    var_profile_df[i, j + 2] <- get_var_profile(subset_pid_df, var_list_local[[j]][1], wake_period_list_local[[i]][1])
+  for (i in 1:length(wake_period_list_local)){
+    # print(paste0("i: ", i))
+    
+    var_profile_df[i, 1] <- p_id
+    # print(var_profile_df[i, 1])
+    var_profile_df[i, 2] <- wake_period_list_local[[i]][1]
+    for (j in 1:length(var_list_local)){
+      var_profile_df[i, j + 2] <- get_var_profile(subset_pid_df, var_list_local[[j]][1], wake_period_list_local[[i]][1])
+    }
+    
   }
+
+  var_profile_df <- as.data.frame(var_profile_df)
+  col_names <- c("p_id", "wake_period", var_list)
   
-}
-
-var_profile_df <- as.data.frame(var_profile_df)
-col_names <- c("p_id", "wake_period", var_list)
-
-names(var_profile_df) <- col_names
-return (var_profile_df)
+  names(var_profile_df) <- col_names
+  return (var_profile_df)
 }
 
 
@@ -391,13 +398,14 @@ p_id_list <- unique(combined_uema_file$Participant_ID)
 ## Test function to explore user data
 ```{r}
 
-p_id <- "neutergoldfishsworn@timestudy_com"
+# p_id <- "neutergoldfishsworn@timestudy_com"
+p_id <- "sharpnessnextpouch@timestudy_com"
 
 pid_subset_df <- prepare_pid_subset(combined_uema_file, combined_report_df, p_id)
 
 pid_var_profile_df <- get_var_profile_df(pid_subset_df, p_id)
 
-pid_var_dist_plot <- get_profile_dist_plot(pid_var_profile_df)
+# pid_var_dist_plot <- get_profile_dist_plot(pid_var_profile_df)
 
 ## For varianc eonly
 pid_variance_df <- get_variance_df(pid_subset_df, p_id)
@@ -412,12 +420,69 @@ freq.na(pid_var_profile_df)
 
 ```
 
-## test impute missing categorical data
+
+## get a subset dataframe with only a few columns
 ```{r}
 
-temp_var_profile_df <- pid_var_profile_df
+keep_vars <- c("stress", "fatigue", "tired", "happy", "sad", "energy")
+skip_var <- c("p_id", "wake_period", "feel_eat", "feel_sit", "feel_exer", "int_exer", "int_sed", "int_eat", "friend", "alone", "family")
 
-imputeMCA(temp_var_profile_df, ncp=1, method = c("Regularized", "EM"), maxiter = 10)
+# var_subset_df <- pid_var_profile_df[, keep_vars]
+var_subset_df <- pid_var_profile_df[, !(names(pid_var_profile_df) %in% skip_var)]
+
+```
+
+
+## Test BayesNet learning with catnet
+Create a catnet drawing function
+```{r}
+
+
+plotAdj <- function(object, ...){
+    nodes = cnNodes(object)
+    l = length(nodes)
+    parents = object@parents
+    adj = matrix(0, ncol=l, nrow=l, dimnames = list(nodes, nodes))
+    for(i in seq_along(parents)){
+      adj[i, parents[[i]]] = 1
+    }
+    g = igraph::graph_from_adjacency_matrix(adj)
+    plot(g, vertex.frame.color = "black",
+         vertex.color = c("lightblue"), # Node border color
+    vertex.shape=c("circle"),
+    vertex.size = c(15),
+    vertex.label.color = c("black"),
+    vertex.label.font = c(1),                        # One of “none”, “circle”, “square”, “csquare”, “rectangle” “crectangle”, “vrectangle”, “pie”, “raster”, or “sphere”
+    # vertex.size=c(15:24),                          # Size of the node (default is 15)
+    # vertex.size2=NA)
+    edge.color=c("black"),           # Edge color
+    edge.width=1,                        # Edge width, defaults to 1
+    edge.arrow.size=0.5,                           # Arrow size, defaults to 1
+    edge.arrow.width=0.5,                          # Arrow width, defaults to 1
+    edge.lty=c("solid")
+    )
+    invisible(adj)
+}
+
+```
+
+
+## simulated annealing in catnet
+```{r}
+# netlist1 = cnSearchSA(ais_v2.sub, maxParentSet = 2)
+netlist1 = cnSearchSA(var_subset_df)
+```
+
+## find the best estimate
+```{r}
+catnet.best = cnFindBIC(netlist1, nrow(var_subset_df))
+
+```
+
+## Check the best network
+```{r}
+
+plotAdj(catnet.best, vertex.color="lightblue")
 
 ```
 
