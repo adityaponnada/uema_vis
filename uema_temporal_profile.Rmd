@@ -413,6 +413,24 @@ pid_variance_df <- get_variance_df(pid_subset_df, p_id)
 
 ```
 
+## Create two participant datasets for a generic network
+```{r}
+
+p1 <- "sharpnessnextpouch@timestudy_com"
+p2 <- "neutergoldfishsworn@timestudy_com"
+
+p1_subset_df <- prepare_pid_subset(combined_uema_file, combined_report_df, p1)
+p2_subset_df <- prepare_pid_subset(combined_uema_file, combined_report_df, p2)
+
+p1_var_df <- get_var_profile_df(p1_subset_df, p1)
+p2_var_df <- get_var_profile_df(p2_subset_df, p2)
+
+p1_p2_var_df <- rbind(p1_var_df, p2_var_df)
+
+```
+
+
+
 ## Get the proportion of missing data per column
 ```{r}
 
@@ -428,7 +446,8 @@ keep_vars <- c("stress", "fatigue", "tired", "happy", "sad", "energy")
 skip_var <- c("p_id", "wake_period", "feel_eat", "feel_sit", "feel_exer", "int_exer", "int_sed", "int_eat", "friend", "alone", "family")
 
 # var_subset_df <- pid_var_profile_df[, keep_vars]
-var_subset_df <- pid_var_profile_df[, !(names(pid_var_profile_df) %in% skip_var)]
+# var_subset_df <- pid_var_profile_df[, !(names(pid_var_profile_df) %in% skip_var)]
+var_subset_df <- p1_p2_var_df[, !(names(p1_p2_var_df) %in% skip_var)]
 
 ```
 
@@ -448,7 +467,7 @@ plotAdj <- function(object, ...){
     }
     g = igraph::graph_from_adjacency_matrix(adj)
     plot(g, vertex.frame.color = "black",
-         vertex.color = c("lightblue"), # Node border color
+         vertex.color = c("lightgoldenrod"), # Node border color
     vertex.shape=c("circle"),
     vertex.size = c(15),
     vertex.label.color = c("black"),
@@ -482,7 +501,7 @@ catnet.best = cnFindBIC(netlist1, nrow(var_subset_df))
 ## Check the best network
 ```{r}
 
-plotAdj(catnet.best, vertex.color="lightblue")
+plotAdj(catnet.best, vertex.color="lightgoldenrod")
 
 ```
 
