@@ -279,12 +279,28 @@ cnet3 <- catnet::cnRandomCatnet(numnodes = 3, maxParents = 2, numCategories = 2)
 
 ```
 
-## Goodness of fit test
+## simulated annealing in catnet
 ```{r}
+# netlist1 = cnSearchSA(ais_v2.sub, maxParentSet = 2)
+netlist1 = cnSearchSA(ais_v2.sub)
+```
 
-cnPearsonTest(cnet2, ais_v2.sub)
+## find the best estimate
+```{r}
+catnet.best = cnFindBIC(netlist1, nrow(ais_v2.sub))
 
 ```
+
+## Check the best network
+```{r}
+
+plotAdj(catnet.best, vertex.color="lightblue")
+
+dag2cpdag(catnet.best)
+
+```
+
+
 
 ## Try catnet with other example
 ```{r}
