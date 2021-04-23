@@ -12,13 +12,15 @@ library(DAAG)
 library(bnlearn)
 library(ggplot2)
 library(visNetwork)
+library(catnet)
+library(igraph)
 
 ```
 
 ## Test function to insert missingness in the dataframe
 ```{r}
 insert_missing_data <- function(df){
-  df <- as.data.frame(lapply(df, function(cc) cc[ sample(c(TRUE, NA), prob = c(0.85, 0.15), size = length(cc), replace = TRUE) ]))
+  df <- as.data.frame(lapply(df, function(cc) cc[ sample(c(TRUE, NA), prob = c(0.50, 0.50), size = length(cc), replace = TRUE) ]))
   return (df)
 }
 ```
@@ -183,4 +185,164 @@ plot.network(structure, ht = "600px")
 
 ```
 
+# Trying with catnet package
+```{r}
+
+## Create a copy of the dataframe
+
+ais_v2 = ais
+```
+
+## Generating a network with hc, hg, and sport variables
+```{r}
+keep <- c("sport", "high_hc", "high_hg")
+
+ais_v2.sub <- ais_v2[, keep]
+
+```
+
+Generate the network structure using the subset
+```{r}
+
+cnet <- catnet::cnNew(
+  nodes = c("sport", "high_hc", "high_hg"),
+  cats = list(c("1","2"), c("1","2"), c("1","2")),
+  parents = list(c(3), c(3), NULL)
+)
+
+```
+
+## Setting the emperical probabilities
+```{r}
+
+cnet2 <- catnet::cnSetProb(cnet, data=ais_v2.sub)
+
+```
+
+## Plot and query the network
+```{r}
+catnet::cnProb(cnet2,which='high_hg')
+
+Sys.setenv(R_CATNET_USE_IGRAPH=TRUE)
+
+cnPlot(cnet2)
+
+```
+
+## Custom plot for catnetwork
+```{r}
+
+plotAdj <- function(object, ...){
+    nodes = cnNodes(object)
+    l = length(nodes)
+    parents = object@parents
+    adj = matrix(0, ncol=l, nrow=l, dimnames = list(nodes, nodes))
+    for(i in seq_along(parents)){
+      adj[i, parents[[i]]] = 1
+    }
+    g = igraph::graph_from_adjacency_matrix(adj)
+    plot(g, ...)
+    invisible(adj)
+}
+
+```
+
+
+## Testing the plot
+```{r}
+
+plotAdj(cnet2, vertex.color="lightblue")
+
+```
+
+
+## Query different attributes of cnet2
+```{r}
+
+cnNumNodes(cnet2)
+cnEdges(cnet2)
+
+cnPlotProb(cnet2)
+
+cnComplexity(cnet2)
+
+dag2cpdag(cnet2)
+
+```
+
+
+## Testing generating a random network with CatNet
+```{r}
+
+set.seed(123)
+cnet3 <- catnet::cnRandomCatnet(numnodes = 3, maxParents = 2, numCategories = 2)
+
+```
+
+## simulated annealing in catnet
+```{r}
+# netlist1 = cnSearchSA(ais_v2.sub, maxParentSet = 2)
+netlist1 = cnSearchSA(ais_v2.sub)
+```
+
+## find the best estimate
+```{r}
+catnet.best = cnFindBIC(netlist1, nrow(ais_v2.sub))
+
+```
+
+## Check the best network
+```{r}
+
+plotAdj(catnet.best, vertex.color="lightblue")
+
+dag2cpdag(catnet.best)
+
+```
+
+
+
+## Try catnet with other example
+```{r}
+
+rm(list=ls())
+
+### generate random data (not simply independent binomials)
+set.seed(123)
+n.obs <- 10
+a1 <- rbinom(n.obs,1,.3)
+a2 <- runif(n.obs)
+a3 <- floor(-3*log(.25+3*a2/4))
+a3[a3>=2] <- NA
+a2 <- floor(2*a2)
+my.data <- data.frame(a1,a2,a3 )
+### discretize data into proper categories
+my.data <- cnDiscretize(my.data,numCategories=2)
+
+my.data
+
+## say we want a2 conditional on a1,a3
+
+## first generate a network with a1,a3 ->a2
+cnet <- cnNew(
+      nodes = c("a1", "a2", "a3"),
+      cats = list(c("1","2"), c("1","2"), c("1","2")),
+      parents = list(NULL, c(1,3), NULL)
+      )
+
+
+## set the empirical probabilities from data=my.data
+cnet2 <- cnSetProb(cnet,data=my.data)
+
+## to get the conditional probability table
+cnProb(cnet2,which='a2')
+
+
+```
+
+## Plot this dummy cnet
+```{r}
+Sys.setenv(R_CATNET_USE_IGRAPH=TRUE)
+catnet::cnPlot(cnet2)
+```
 
