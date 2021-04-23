@@ -20,7 +20,7 @@ library(igraph)
 ## Test function to insert missingness in the dataframe
 ```{r}
 insert_missing_data <- function(df){
-  df <- as.data.frame(lapply(df, function(cc) cc[ sample(c(TRUE, NA), prob = c(0.85, 0.15), size = length(cc), replace = TRUE) ]))
+  df <- as.data.frame(lapply(df, function(cc) cc[ sample(c(TRUE, NA), prob = c(0.50, 0.50), size = length(cc), replace = TRUE) ]))
   return (df)
 }
 ```
@@ -207,7 +207,7 @@ Generate the network structure using the subset
 cnet <- catnet::cnNew(
   nodes = c("sport", "high_hc", "high_hg"),
   cats = list(c("1","2"), c("1","2"), c("1","2")),
-  parents = list(NULL, NULL, c(1,2))
+  parents = list(c(3), c(3), NULL)
 )
 
 ```
@@ -228,6 +228,33 @@ Sys.setenv(R_CATNET_USE_IGRAPH=TRUE)
 cnPlot(cnet2)
 
 ```
+
+## Custom plot for catnetwork
+```{r}
+
+plotAdj <- function(object, ...){
+    nodes = cnNodes(object)
+    l = length(nodes)
+    parents = object@parents
+    adj = matrix(0, ncol=l, nrow=l, dimnames = list(nodes, nodes))
+    for(i in seq_along(parents)){
+      adj[i, parents[[i]]] = 1
+    }
+    g = igraph::graph_from_adjacency_matrix(adj)
+    plot(g, ...)
+    invisible(adj)
+}
+
+```
+
+
+## Testing the plot
+```{r}
+
+plotAdj(cnet2, vertex.color="lightblue")
+
+```
+
 
 ## Query different attributes of cnet2
 ```{r}
