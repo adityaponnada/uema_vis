@@ -1,0 +1,164 @@
+---
+title: "simple_catnet_examples"
+author: "Aditya Ponnada"
+date: "4/25/2021"
+output: html_document
+---
+
+
+## Include library
+```{r}
+library(igraph)
+library(catnet)
+library(graph)
+```
+
+## Keep a general catnet plotting function
+```{r}
+plot_catnet <- function(object, ...){
+    nodes = cnNodes(object)
+    l = length(nodes)
+    parents = object@parents
+    adj = matrix(0, ncol=l, nrow=l, dimnames = list(nodes, nodes))
+    for(i in seq_along(parents)){
+      adj[i, parents[[i]]] = 1
+    }
+    g = igraph::graph_from_adjacency_matrix(adj)
+    plot(g, vertex.frame.color = "black",
+         vertex.color = c("lightgoldenrod"), # Node border color
+    vertex.shape=c("circle"),
+    vertex.size = c(15),
+    vertex.label.color = c("black"),
+    vertex.label.font = c(1),                        # One of “none”, “circle”, “square”, “csquare”, “rectangle” “crectangle”, “vrectangle”, “pie”, “raster”, or “sphere”
+    # vertex.size=c(15:24),                          # Size of the node (default is 15)
+    # vertex.size2=NA)
+    edge.color=c("black"),           # Edge color
+    edge.width=1,                        # Edge width, defaults to 1
+    edge.arrow.size=0.5,                           # Arrow size, defaults to 1
+    edge.arrow.width=0.5,                          # Arrow width, defaults to 1
+    edge.lty=c("solid")
+    )
+    invisible(adj)
+}
+```
+
+
+
+## Creating new networks
+Normally the network is "inferred" from the data and created "implicitly". But sometimes it may be possible to create the network explicitly and manually by the user. Below is one such example. cnNew function creates a new network. The function takes following arguments: a vector of node names (nodes), a list of node categories (cats), a list of parents ((parents)) and an optional list of conditional probabilities (probs). 
+
+```{r}
+
+cnet <- cnNew(
+  nodes = c("a", "b", "c"),
+  cats = list(c("1","2"), c("1","2"), c("1","2")),
+  parents = list(NULL, c(1), c(1,2)),
+  probs = list( c(0.2,0.8),
+  list(c(0.6,0.4),c(0.4,0.6)),
+  list(list(c(0.3,0.7),c(0.7,0.3)),
+  list(c(0.9,0.1),c(0.1,0.9)))) )
+
+```
+
+## Test explore the plot
+```{r}
+plot_catnet(cnet)
+```
+
+## Generating a random network
+```{r}
+
+# set.seed(123)
+
+cnet1 <- cnRandomCatnet(numnodes = 4, maxParents = 2, numCategories = 2)
+
+plot_catnet(cnet1)
+
+```
+
+## Accessing network attributes and characteristics
+```{r}
+
+cnNumNodes(cnet)
+
+cnNodes(cnet)
+
+cnEdges(cnet)
+
+cnParents(cnet)
+
+```
+
+In matrix forms
+```{r}
+
+cnMatParents(cnet)
+
+cnMatEdges(cnet)
+
+```
+
+## Complexity of a network
+The complexity is an integer number specifying the number of parameters needed to define the probability structure of the network.
+
+```{r}
+
+cnComplexity(cnet)
+
+```
+
+## Topological node order
+```{r}
+
+
+cnOrder(cnet)
+
+```
+
+## Comparing networks
+There are two basic criteria for comparing networks. First, a topological one that compares the graphical structure of the networks and second, a probabilistic one, involving the distributions specified by the networks.
+
+```{r}
+
+set.seed(456)
+cnet3 <- cnRandomCatnet(cnNumNodes(cnet), maxParents=2, numCategories=2)
+cnet3@nodes <- cnet@nodes
+cnCompare(object1=cnet, object2=cnet3)
+
+```
+
+## Generating samples + making prediction
+```{r}
+
+samples1 <- cnSamples(object=cnet, numsamples = 100, output = "matrix")
+
+dim(samples1)
+
+samples2 <- cnSamples(object=cnet, numsamples = 100, output = "frame")
+
+```
+
+## Trying perturbations
+```{r}
+samples3 <- cnSamples(object = cnet, numsamples = 10, perturbations = c(0,0,1))
+```
+
+
+## trying predictions
+```{r}
+
+## Generate a sample of size 12 and set the last 3 nodes as non-available
+numnodes <- cnNumNodes(cnet)
+samples4 <- cnSamples(object = cnet, numsamples = 12, output="matrix")
+## predict the last three nodes in cnet from the rest
+## by setting their values in 'samples3' as NA
+samples4[numnodes -2, ] <- rep(NA, 12)
+samples4[numnodes - 1, ] <- rep(NA, 12)
+samples4[numnodes, ] <- rep(NA, 12)
+
+## predict the values of the last 3 nodes
+new_samples <- cnPredict(object = cnet, data = samples4)
+
+```
+
+
