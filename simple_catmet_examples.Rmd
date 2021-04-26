@@ -324,6 +324,9 @@ cnCompare(cnet8, anet8)
 ```
 
 ## Test new network vs simulated network
+
+Test code to create a network, simulate samples from it, get the best network and then simulate data from the best network to create another optimum network!
+
 ```{r}
 
 cnet_test <- cnNew(
@@ -375,6 +378,37 @@ plot_catnet(cnet_best)
 ```{r}
 
 cnCompare(cnet_test, cnet_best)
+
+```
+
+## Generate samples from cnet_best
+```{r}
+
+best_samples <- cnSamples(object = cnet_best, numsamples = 50000, output = "frame")
+
+```
+
+## search for the networks in the new samples
+```{r}
+
+best_cnet_arrays <- cnSearchOrder(data = best_samples, maxParentSet = 2, nodeOrder = sample(names(best_samples)))
+
+best_best_cnet <- cnFindBIC(best_cnet_arrays)
+
+```
+
+## plot the new network
+```{r}
+
+plot_catnet(best_best_cnet)
+
+```
+
+
+## Compare cnet_best with best_best_cnet
+```{r}
+
+cnCompare(cnet_best, best_best_cnet)
 
 ```
 
