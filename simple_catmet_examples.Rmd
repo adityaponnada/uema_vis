@@ -317,6 +317,10 @@ if (j < numnodes){
 cnet8 <- cnSetProb(cnet8, ps)
 res8 <- cnSearchOrder(data=ps, perturbations = NULL, maxParentSet = maxpars, parentSizes = NULL, maxComplexity = 0, nodeOrder = cnOrder(cnet8), parentsPool = NULL, fixedParents = NULL, edgeProb = NULL, echo = FALSE)
 
+anet8 <- cnFind(res8, cnComplexity(cnet8))
+
+cnCompare(cnet8, anet8)
+
 ```
 
 

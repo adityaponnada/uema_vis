@@ -447,7 +447,7 @@ skip_var <- c("p_id", "wake_period", "feel_eat", "feel_sit", "feel_exer", "int_e
 
 # var_subset_df <- pid_var_profile_df[, keep_vars]
 # var_subset_df <- pid_var_profile_df[, !(names(pid_var_profile_df) %in% skip_var)]
-var_subset_df <- p1_p2_var_df[, !(names(p1_p2_var_df) %in% skip_var)]
+var_subset_df <- p2_var_df[, !(names(p2_var_df) %in% skip_var)]
 
 ```
 
@@ -502,6 +502,49 @@ catnet.best = cnFindBIC(netlist1, nrow(var_subset_df))
 ```{r}
 
 plotAdj(catnet.best, vertex.color="lightgoldenrod")
+
+```
+
+## Test with bnlearn's missing data imputation method
+```{r}
+
+## Convert the vars to factors
+new_var_df <- var_subset_df
+
+test_keep <- c("stress", "fatigue", "relax")
+new_var_df <- new_var_df[, test_keep]
+
+new_var_df[sapply(new_var_df, is.character)] <- lapply(new_var_df[sapply(new_var_df, is.character)], as.factor)
+
+new_var_df <- dplyr::filter(new_var_df, rowSums(is.na(new_var_df)) != ncol(new_var_df))
+
+
+# start = bn.fit(empty.graph(names(new_var_df), new_var_df))
+
+bn_mod <- structural.em(new_var_df)
+
+graphviz.plot(bn_mod)
+```
+
+
+## Test function to insert missingness in the dataframe
+```{r}
+insert_missing_data <- function(df){
+  df <- as.data.frame(lapply(df, function(cc) cc[ sample(c(TRUE, NA), prob = c(0.30, 0.70), size = length(cc), replace = TRUE) ]))
+  return (df)
+}
+```
+
+## With test data
+```{r}
+
+data("learning.test")
+head(learning.test)
+
+incomplete.data = learning.test
+incomplete.data <- insert_missing_data(incomplete.data)
+
+graphviz.plot(structural.em(incomplete.data))
 
 ```
 
