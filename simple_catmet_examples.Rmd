@@ -350,8 +350,8 @@ cnet_test_sample_df <- cnSamples(cnet_test, numsamples = 50000, output = "frame"
 ## Search for the best structure
 ```{r}
 
-cnet_array <- cnSearchSA(cnet_test_sample_df)
-# cnet_array <- cnSearchOrder(cnet_test_sample_df, maxParentSet = 2)
+# cnet_array <- cnSearchSA(cnet_test_sample_df)
+cnet_array <- cnSearchOrder(cnet_test_sample_df, maxParentSet = 2, nodeOrder = sample(names(cnet_test_sample_df)))
 
 cnet_best <- cnFindBIC(cnet_array)
 
@@ -368,6 +368,13 @@ plot the best case
 # }
 
 plot_catnet(cnet_best)
+
+```
+
+## Compare the networks
+```{r}
+
+cnCompare(cnet_test, cnet_best)
 
 ```
 
