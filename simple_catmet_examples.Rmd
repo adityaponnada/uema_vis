@@ -11,35 +11,42 @@ output: html_document
 library(igraph)
 library(catnet)
 library(graph)
+library(Rgraphviz)
+library(networkD3)
 ```
 
 ## Keep a general catnet plotting function
 ```{r}
-plot_catnet <- function(object, ...){
-    nodes = cnNodes(object)
-    l = length(nodes)
-    parents = object@parents
-    adj = matrix(0, ncol=l, nrow=l, dimnames = list(nodes, nodes))
-    for(i in seq_along(parents)){
-      adj[i, parents[[i]]] = 1
-    }
-    g = igraph::graph_from_adjacency_matrix(adj)
-    plot(g, vertex.frame.color = "black",
-         vertex.color = c("lightgoldenrod"), # Node border color
-    vertex.shape=c("circle"),
-    vertex.size = c(15),
-    vertex.label.color = c("black"),
-    vertex.label.font = c(1),                        # One of “none”, “circle”, “square”, “csquare”, “rectangle” “crectangle”, “vrectangle”, “pie”, “raster”, or “sphere”
-    # vertex.size=c(15:24),                          # Size of the node (default is 15)
-    # vertex.size2=NA)
-    edge.color=c("black"),           # Edge color
-    edge.width=1,                        # Edge width, defaults to 1
-    edge.arrow.size=0.5,                           # Arrow size, defaults to 1
-    edge.arrow.width=0.5,                          # Arrow width, defaults to 1
-    edge.lty=c("solid")
-    )
-    invisible(adj)
+
+
+get_adj_matrix <- function(object, ...){
+  adj = cnMatParents(object)
 }
+
+plot_adj <- function(adjMAT, type="d", ...){
+    
+    if(type == "d") {
+          g = new("graphAM", adjMat=adjMAT, edgemode="directed")
+          Rgraphviz::plot(g, ...)
+           
+    } else if(type == "i"){
+          g = igraph::graph_from_adjacency_matrix(adjMAT)
+          plot(g, vertex.shape=c("circle"),
+              vertex.color="lightblue",
+              vertex.size = c(15),
+              vertex.label.color = c("black"),
+              vertex.label.font = c(1),             # One of “none”, “circle”, “square”, “csquare”, “rectangle” “crectangle”, “vrectangle”, “pie”, “raster”, or “sphere”
+              # vertex.size=c(15:24),                         # Size of the node (default is 15)
+              # vertex.size2=NA)
+            edge.color=c("black"),           # Edge color
+            edge.width=1,                        # Edge width, defaults to 1
+            edge.arrow.size=0.5,                           # Arrow size, defaults to 1
+            edge.arrow.width=0.5,                          # Arrow width, defaults to 1
+            edge.lty=c("solid"))
+    }
+    invisible(g) # return the graph object
+}
+
 ```
 
 
@@ -62,7 +69,12 @@ cnet <- cnNew(
 
 ## Test explore the plot
 ```{r}
-plot_catnet(cnet)
+
+cnet_adj <- get_adj_matrix(cnet)
+
+plot_adj(cnet_adj, type = "i")
+
+# plot_catnet(cnet)
 ```
 
 ## Generating a random network
@@ -323,6 +335,10 @@ cnCompare(cnet8, anet8)
 
 ```
 
+
+
+# Simulation test ...
+
 ## Test new network vs simulated network
 
 Test code to create a network, simulate samples from it, get the best network and then simulate data from the best network to create another optimum network!
@@ -339,7 +355,13 @@ cnet_test <- cnNew(
 Plot and see
 ```{r}
 
-plot_catnet(cnet_test)
+cnet_test_adj <- get_adj_matrix(cnet_test)
+plot_adj(cnet_test_adj, type = "i")
+
+# plot_catnet(cnet_test)
+
+cnet_test_prob <- cnProb(cnet_test)
+cnet_test_prob
 
 ```
 
@@ -363,14 +385,12 @@ cnet_best <- cnFindBIC(cnet_array)
 plot the best case
 ```{r}
 
-# num_networks <- length(cnet_array@nets)
-# 
-# for (i in 1:num_networks){
-# 
-#   plot_catnet(cnet_array@nets[[1]])  
-# }
+cnet_best_adj <- get_adj_matrix(cnet_best)
+plot_adj(cnet_best_adj, type = "i")
 
-plot_catnet(cnet_best)
+cnet_best_prob <- cnProb(cnet_best)
+
+cnet_best_prob
 
 ```
 
@@ -400,7 +420,11 @@ best_best_cnet <- cnFindBIC(best_cnet_arrays)
 ## plot the new network
 ```{r}
 
-plot_catnet(best_best_cnet)
+cnet_test_adj <- get_adj_matrix(cnet_test)
+plot_adj(cnet_test_adj, type = "i")
+
+best_best_prob <- cnProb(best_best_cnet)
+best_best_prob
 
 ```
 
@@ -409,6 +433,7 @@ plot_catnet(best_best_cnet)
 ```{r}
 
 cnCompare(cnet_best, best_best_cnet)
+cnCompare(cnet_test, best_best_cnet)
 
 ```
 
