@@ -286,4 +286,37 @@ abline(v=bic_net@complexity,lty=3, col="blue")
 
 ```
 
+## Include prior probabilities
+```{r}
+
+set.seed(678)
+
+numnodes <- 16
+numcats <- 3
+maxpars <- 2
+cnet8 <- cnRandomCatnet(numnodes = numnodes, maxParents = maxpars, numCategories = numcats)
+
+ps <- cnSamples(cnet8, 500)
+
+## next, a variable number of categories scanario is demonstrated
+## find a node with descendants and reduce its number of categories
+
+mpars <- cnMatParents(cnet8)
+
+for(j in 1:numnodes){
+  if (sum(mpars[,j]) > 0) {
+    break
+  }
+}
+
+if (j < numnodes){
+  cnet8@categories[[j]] <- cnet8@categories[[j]][1:(numcats - 1)]
+}
+
+## now reset cnet8's probability table
+cnet8 <- cnSetProb(cnet8, ps)
+res8 <- cnSearchOrder(data=ps, perturbations = NULL, maxParentSet = maxpars, parentSizes = NULL, maxComplexity = 0, nodeOrder = cnOrder(cnet8), parentsPool = NULL, fixedParents = NULL, edgeProb = NULL, echo = FALSE)
+
+```
+
 
