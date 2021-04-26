@@ -161,4 +161,129 @@ new_samples <- cnPredict(object = cnet, data = samples4)
 
 ```
 
+## learning network from data
+
+Network estimation for given node order
+
+```{r}
+
+set.seed(789)
+cnet2 <- cnRandomCatnet(numnodes = 10, maxParents = 2, numCategories = 2)
+nodeOrder <- order(runif(cnNumNodes(cnet2)))
+cnet2
+
+```
+
+## Show the graph
+```{r}
+
+plot_catnet(cnet2)
+
+```
+
+## Generate a sample from cnet structure
+```{r}
+
+samples <- cnSamples(object = cnet2, numsamples = 100, output = "frame")
+
+netlist <- cnSearchOrder(data=samples, perturbations = NULL, maxParentSet = 2, maxComplexity = 20, nodeOrder = nodeOrder, parentsPool = NULL, fixedParents = NULL)
+
+```
+
+## find the reconstructed network with the true complexity
+```{r}
+
+bnet <- cnFind(netlist, 20)
+bnet2 <- cnFindBIC(netlist)
+
+plot_catnet(bnet)
+plot_catnet(bnet2)
+
+```
+
+In the next example, we generate a random network with 12 nodes and then search for the best
+fitting networks that comply with the following requirements: (1) the last node is not a parent to
+anyone else, and (2) the first two nodes are necessarily parents to all of the rest nodes. The search is
+restricted to the ’true’ node order, the one of the network from which the data is generated, as obtained
+by cnOrder(cnet) function.
+
+```{r}
+
+set.seed(123)
+nnodes <- 12
+cnet <- cnRandomCatnet(numnodes = nnodes, maxParents = 5, numCategories = 2)
+norder <- cnOrder(cnet)
+
+plot_catnet(cnet)
+
+
+```
+
+Add additional parameters
+```{r}
+
+parPool <- vector("list", nnodes)
+for (i in 1:nnodes){
+  parPool[[i]] <- 1:(nnodes-1)
+}
+
+fixParPool <- vector("list", nnodes)
+for (i in 3:nnodes){
+  fixParPool[[i]] <- c(1,2)
+}
+
+samples <- cnSamples(cnet, numsamples = 200)
+
+eval <- cnSearchOrder(data = samples, perturbations = NULL, maxParentSet = 2, maxComplexity = 200, nodeOrder = norder, parentsPool = parPool, fixedParents = fixParPool)
+
+eval
+
+eval_best <- cnFind(eval)
+
+plot_catnet(eval_best)
+
+```
+
+## Network selection with AIC and BIC
+```{r}
+
+set.seed(345)
+
+# generate a 100 size sample from cnet6
+cnet6 <- cnRandomCatnet(numnodes = 12, maxParents = 5, numCategories = 2)
+samples <- cnSamples(object = cnet6, numsamples = 100, output = "matrix")
+num_order <- order(runif(1:dim(samples)[1]))
+eval <- cnSearchOrder(data = samples, perturbations = NULL, maxParentSet = 2, parentSizes = NULL, maxComplexity = 50, nodeOrder = num_order, parentsPool = NULL, fixedParents = NULL, echo = FALSE)
+
+
+```
+
+Get a network based on AIC and plot it
+```{r}
+aic_net <- cnFindAIC(eval)
+
+plot_catnet(aic_net)
+```
+
+Get a network based on BIC and plot it
+```{r}
+
+bic_net <- cnFindBIC(eval)
+
+plot_catnet(bic_net)
+
+```
+
+## Plot likelihoof vs complexity plots
+
+```{r}
+
+plot(eval@complexity, eval@loglik, xlab="Complexity", ylab = "Log-likelihood", main="Model selection: AIC and BIC complexities in red and blue.")
+
+abline(v=aic_net@complexity,lty=2, col="red")
+
+abline(v=bic_net@complexity,lty=3, col="blue")
+
+```
+
 
