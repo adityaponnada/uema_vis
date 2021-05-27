@@ -165,18 +165,18 @@ get_uEMA_pid_var_df <- function(df, variable){
 ## get p-id subsets
 First for the uEMA combined file
 
-```{r}
-participant_id = "neutergoldfishsworn@timestudy_com"
+<!-- ```{r} -->
+<!-- participant_id = "sharpnessnextpouch@timestudy_com" -->
 
-subset_pid_df <- get_uEMA_pid_df(combined_uema_file, participant_id) 
-```
+<!-- subset_pid_df <- get_uEMA_pid_df(combined_uema_file, participant_id)  -->
+<!-- ``` -->
 
-Then for the combined daily report file
-```{r}
+<!-- Then for the combined daily report file -->
+<!-- ```{r} -->
 
-report_pid_df <- get_report_pid_df(combined_report_df, participant_id)
+<!-- report_pid_df <- get_report_pid_df(combined_report_df, participant_id) -->
 
-```
+<!-- ``` -->
 
 ## add a waking period column to each response row
 ```{r}
@@ -210,8 +210,9 @@ prepare_pid_subset <- function(df, report_df, p_id) {
   pid_subset_df <- subset(pid_subset_df, pid_subset_df$Q_ID != "activity")
   
   for(i in 1:nrow(pid_report_df)){
-  # print(paste0(i, " _ ", report_pid_df$current_wake_time[i]))
+  # print(paste0(i, " _ ", pid_report_df$current_wake_time[i]))
   pid_subset_df$wake_period[pid_subset_df$date_timestamp >= pid_report_df$current_wake_time[i] & pid_subset_df$date_timestamp <= pid_report_df$current_sleep_time[i]] <- paste0("Wake_period_", i)
+  # print(paste0("Wake_period_", i))
   }
   
   return(pid_subset_df)
@@ -352,13 +353,13 @@ get_var_profile_df <- function(df, p_id){
     # print(var_profile_df[i, 1])
     var_profile_df[i, 2] <- wake_period_list_local[[i]][1]
     for (j in 1:length(var_list_local)){
-      var_profile_df[i, j + 2] <- get_var_profile(subset_pid_df, var_list_local[[j]][1], wake_period_list_local[[i]][1])
+      var_profile_df[i, j + 2] <- get_var_profile(df, var_list_local[[j]][1], wake_period_list_local[[i]][1])
     }
     
   }
 
   var_profile_df <- as.data.frame(var_profile_df)
-  col_names <- c("p_id", "wake_period", var_list)
+  col_names <- c("p_id", "wake_period", var_list_local)
   
   names(var_profile_df) <- col_names
   return (var_profile_df)
@@ -408,10 +409,55 @@ pid_var_profile_df <- get_var_profile_df(pid_subset_df, p_id)
 # pid_var_dist_plot <- get_profile_dist_plot(pid_var_profile_df)
 
 ## For varianc eonly
-pid_variance_df <- get_variance_df(pid_subset_df, p_id)
+# pid_variance_df <- get_variance_df(pid_subset_df, p_id)
 
 
 ```
+
+
+## Get trajectories for all the participants
+Looping through the participant list to get the rowbinded trajectory data frame for each participant
+
+First create a combined function of getting subsets and then feeding subsets to the var profile
+```{r}
+
+get_trajectories_df <- function(response_df, report_df, user_id){
+  user_id_subset <- prepare_pid_subset(response_df, report_df, user_id)
+  user_var_profile_df <- get_var_profile_df(user_id_subset, user_id)
+  return(user_var_profile_df)
+}
+
+```
+
+
+```{r}
+
+combined_df = data.frame()
+
+for (username in p_id_list){
+  print(username)
+  temp_pid_df <- get_trajectories_df(combined_uema_file, combined_report_df, username)
+  # head(temp_pid_df)
+  combined_df <- rbind(combined_df, temp_pid_df)
+  # tail(combined_df)
+}
+
+
+```
+
+## Save to file
+```{r}
+
+write.csv(combined_df, file="D:/new_data_pre_processed/uema_trajectories_combined.csv", quote = FALSE, row.names = FALSE, sep = ",")
+
+```
+
+
+
+
+# Data exploration with bayesian networks below
+Follow this section for trials on bayesian networks
+
 
 ## Create two participant datasets for a generic network
 ```{r}
