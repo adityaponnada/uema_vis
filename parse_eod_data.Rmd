@@ -117,3 +117,8 @@ Only select these rows
 time_daily_long_df <- subset(time_daily_long_df, time_daily_long_df$Q_D %in% questions_to_include)
 ```
 
+## Convert the prompt time to date time object
+```{r}
+time_daily_long_df$prompt_date_time <- as.POSIXct(time_daily_long_df$Initial_Prompt_Local_Time, format="%Y-%m-%d %H:%M:%OS")
+```
+
