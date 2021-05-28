@@ -39,5 +39,7 @@ combined_ema_file <- ldply(list_of_files, read.csv, header = TRUE)
 ## Filter out daily prompts on TIME days
 ```{r}
 
+combined_ema_time_daily_df <- subset(combined_ema_file, combined_ema_file$Prompt_Type == "Daily" & combined_ema_file$Study_Mode == "TIME")
+
 ```
 
