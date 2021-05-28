@@ -43,3 +43,17 @@ combined_ema_time_daily_df <- subset(combined_ema_file, combined_ema_file$Prompt
 
 ```
 
+## Filter out never started or neverprompted prompts
+```{r}
+include_status <- c("Started", "Completed", "PartiallyCompleted")
+combined_ema_time_daily_df <- subset(combined_ema_time_daily_df, combined_ema_time_daily_df$Answer_Status %in% include_status)
+```
+
+
+## Filter out unwanted columns
+```{r}
+
+combined_ema_time_daily_df <- combined_ema_time_daily_df[, c(1:108)]
+
+```
+
