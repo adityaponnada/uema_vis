@@ -31,7 +31,7 @@ pattern_files_found <- Sys.glob(file_pattern)
 list_of_files <- list.files(path = pre_process_root_path, pattern = NULL, full.names = TRUE)
 
 # combined_uema_file <- do.call(plyr::rbind.fill(), lapply(pattern_files_found, read.csv))
-combined_ema_file <- ldply(list_of_files, read.csv, header = TRUE)
+combined_ema_file <- ldply(list_of_files, read.csv, header = TRUE, na.strings = c("", "NA"))
 
 ```
 
