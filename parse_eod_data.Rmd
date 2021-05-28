@@ -122,3 +122,11 @@ time_daily_long_df <- subset(time_daily_long_df, time_daily_long_df$Q_D %in% que
 time_daily_long_df$prompt_date_time <- as.POSIXct(time_daily_long_df$Initial_Prompt_Local_Time, format="%Y-%m-%d %H:%M:%OS")
 ```
 
+## Temporarily remove data before june 1 2020
+```{r}
+filter_date <- as.POSIXct("2020-06-01 00:00:00.000", format="%Y-%m-%d %H:%M:%OS")
+
+time_daily_long_df <- subset(time_daily_long_df, time_daily_long_df$prompt_date_time >= filter_date)
+```
+
+
