@@ -94,4 +94,11 @@ ans_time_cols <- get_column_type_list(4, question_column_set_list)
 ```
 
 ## Convert to long format
+```{r}
+
+time_daily_long_df <- reshape(combined_ema_time_daily_df, direction="long", 
+        varying=list(Q_ID_cols, Q_text_cols, ans_text_cols, ans_time_cols), 
+        v.names=c("Q_D","Q_TEXT","ANS_TEXT", "ANS_TIME"))
+
+```
 
