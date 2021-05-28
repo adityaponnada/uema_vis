@@ -1,0 +1,43 @@
+---
+title: "parse_EOD_data"
+author: "Aditya Ponnada"
+date: "5/27/2021"
+output: html_document
+---
+
+## Import libraries
+```{r}
+library(psych)
+library(dplyr)
+library(plyr)
+library(reshape2)
+
+```
+
+## Read and combine the csv files for EOD
+```{r}
+pre_process_root_path = "D:/new_data_pre_processed/ema_promptresponse/"
+
+# file_pattern <- paste0(pre_process_root_path, '/*/phone_promptresponse_clean_*.csv')
+file_pattern <- paste0(pre_process_root_path, '/*@timestudy_com.csv')
+```
+
+## Combine and read all the files for EMA
+```{r}
+
+pattern_files_found <- Sys.glob(file_pattern)
+
+# list_of_files <- list.files(pattern_files_found, recursive = TRUE, full.names = TRUE)
+list_of_files <- list.files(path = pre_process_root_path, pattern = NULL, full.names = TRUE)
+
+# combined_uema_file <- do.call(plyr::rbind.fill(), lapply(pattern_files_found, read.csv))
+combined_ema_file <- ldply(list_of_files, read.csv, header = TRUE)
+
+```
+
+
+## Filter out daily prompts on TIME days
+```{r}
+
+```
+
