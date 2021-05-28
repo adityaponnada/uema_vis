@@ -31,7 +31,7 @@ pattern_files_found <- Sys.glob(file_pattern)
 list_of_files <- list.files(path = pre_process_root_path, pattern = NULL, full.names = TRUE)
 
 # combined_uema_file <- do.call(plyr::rbind.fill(), lapply(pattern_files_found, read.csv))
-combined_ema_file <- ldply(list_of_files, read.csv, header = TRUE)
+combined_ema_file <- ldply(list_of_files, read.csv, header = TRUE, na.strings = c("", "NA"))
 
 ```
 
@@ -39,5 +39,71 @@ combined_ema_file <- ldply(list_of_files, read.csv, header = TRUE)
 ## Filter out daily prompts on TIME days
 ```{r}
 
+combined_ema_time_daily_df <- subset(combined_ema_file, combined_ema_file$Prompt_Type == "Daily" & combined_ema_file$Study_Mode == "TIME")
+
+```
+
+## Filter out never started or neverprompted prompts
+```{r}
+include_status <- c("Started", "Completed", "PartiallyCompleted")
+combined_ema_time_daily_df <- subset(combined_ema_time_daily_df, combined_ema_time_daily_df$Answer_Status %in% include_status)
+```
+
+
+## Filter out unwanted columns
+```{r}
+
+combined_ema_time_daily_df <- combined_ema_time_daily_df[, c(1:109)]
+
+```
+
+## get column pair lists
+```{r}
+question_column_set_list <- names(combined_ema_time_daily_df[, c(34:109)])
+```
+
+First describe the set types:
+Question ID columns 1, 5, ... i = 1, i + 4
+Question_text columns, 2, 6, ... i = 2, i + 4
+Answer_text columns, 3, 7 ... i = 3, i + 4
+Answer_time columns, 4, 8, ... i = 4, i + 4
+```{r}
+
+get_column_type_list <- function(start_index, col_list){
+  
+  type_list <- c()
+  num_iters <- length(col_list)/4
+  for (i in 1:num_iters){
+    type_list <- c(type_list, col_list[[start_index]])
+    start_index = start_index + 4
+    
+  }
+  
+  return(type_list)
+  
+}
+
+```
+
+## Get type lists
+```{r}
+Q_ID_cols <- get_column_type_list(1, question_column_set_list)
+Q_text_cols <- get_column_type_list(2, question_column_set_list)
+ans_text_cols <- get_column_type_list(3, question_column_set_list)
+ans_time_cols <- get_column_type_list(4, question_column_set_list)
+```
+
+## Convert to long format
+```{r}
+
+time_daily_long_df <- reshape(combined_ema_time_daily_df, direction="long", 
+        varying=list(Q_ID_cols, Q_text_cols, ans_text_cols, ans_time_cols), 
+        v.names=c("Q_D","Q_TEXT","ANS_TEXT", "ANS_TIME"))
+
+```
+
+## Group by P_ID and then sort by time
+```{r}
+time_daily_long_df <- time_daily_long_df[order(time_daily_long_df$Participant_ID, time_daily_long_df$Initial_Prompt_Local_Time), ]
 ```
 
