@@ -138,3 +138,19 @@ time_daily_long_df$Q_ID <- gsub('[Q]{1}\\d{1,2}_', '', time_daily_long_df$Q_D)
 
 ```
 
+## Read the daily report file
+```{r}
+
+
+combined_report_file = paste0('D:/new_data_pre_processed', '/combined_report_N70.csv')
+combined_report_df <- read.csv(combined_report_file, header = TRUE, sep = ',')
+
+```
+
+## Convert sleep wake times to date time objects
+```{r}
+
+
+
+```
+
