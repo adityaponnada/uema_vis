@@ -162,7 +162,8 @@ uEMA combined file
 ```{r}
 
 get_EOD_pid_df <- function(df, p_id){
-  pid_df <- subset(df, df$Participant_ID == p_id)
+  p_id_split <- strsplit(p_id, '@timestudy_com')[[1]]
+  pid_df <- subset(df, df$Participant_ID == p_id_split)
   return(pid_df)
 }
 
@@ -220,8 +221,10 @@ get_var_profile <- function(df, variable, wake_period_name){
   # print(wake_subset_df)
   if (nrow(wake_subset_df) != 0){
     val_list = wake_subset_df$ANS_TEXT
+    # print(val_list)
     tt <- table(val_list)
     profile_type <- names(tt[which.max(tt)])
+    # print(profile_type)
     return(profile_type)
   } else {
     return(NA)
@@ -265,3 +268,15 @@ get_var_profile_df <- function(df, p_id){
 
 
 ```
+
+## Create a test for a sample user
+```{r}
+
+p_id <- "sharpnessnextpouch@timestudy_com"
+
+pid_subset_df <- prepare_pid_subset(time_daily_long_df, combined_report_df, p_id)
+
+pid_var_profile_df <- get_var_profile_df(pid_subset_df, p_id)
+
+```
+
