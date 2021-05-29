@@ -151,6 +151,117 @@ combined_report_df <- read.csv(combined_report_file, header = TRUE, sep = ',')
 ```{r}
 
 
+combined_report_df$current_wake_time <- as.POSIXct(combined_report_df$current_wake_time, format="%Y-%m-%d %H:%M:%S")
+combined_report_df$current_sleep_time <- as.POSIXct(combined_report_df$current_sleep_time, format="%Y-%m-%d %H:%M:%S")
 
 ```
 
+## create a subset for participant
+uEMA combined file
+
+```{r}
+
+get_EOD_pid_df <- function(df, p_id){
+  pid_df <- subset(df, df$Participant_ID == p_id)
+  return(pid_df)
+}
+
+```
+
+Combined report file
+```{r}
+
+get_report_pid_df <- function(df, p_id){
+  pid_df <- subset(df, df$participant_ID == p_id)
+  pid_df <- subset(pid_df, pid_df$study_mode == "TIME")
+  return(pid_df)
+}
+
+```
+
+## Create a subset for the construct
+uEMA combined file
+
+```{r}
+
+get_EOD_pid_var_df <- function(df, variable){
+  var_df <- subset(df, df$Q_ID == variable)
+  return(var_df)
+}
+
+```
+
+## get p_id_subset
+```{r}
+
+prepare_pid_subset <- function(df, report_df, p_id) {
+  pid_subset_df <- get_EOD_pid_df(df, p_id)
+  pid_report_df <- get_report_pid_df(report_df, p_id)
+  
+  for(i in 1:nrow(pid_report_df)){
+  # print(paste0(i, " _ ", pid_report_df$current_wake_time[i]))
+  pid_subset_df$wake_period[pid_subset_df$prompt_date_time >= pid_report_df$current_wake_time[i] & pid_subset_df$prompt_date_time <= pid_report_df$current_sleep_time[i]] <- paste0("Wake_period_", i)
+  # print(paste0("Wake_period_", i))
+  }
+  
+  return(pid_subset_df)
+  
+}
+
+```
+
+
+## Create function to get trajectory
+```{r}
+
+get_var_profile <- function(df, variable, wake_period_name){
+  wake_subset_df <- subset(df, df$wake_period == wake_period_name & df$Q_ID == variable)
+  # wake_subset_df <- subset(wake_subset_df, wake_subset_df$Q_ID == variable)
+  # print(wake_subset_df)
+  if (nrow(wake_subset_df) != 0){
+    val_list = wake_subset_df$ANS_TEXT
+    tt <- table(val_list)
+    profile_type <- names(tt[which.max(tt)])
+    return(profile_type)
+  } else {
+    return(NA)
+  }
+}
+
+```
+
+## Generate wake period profile for each variable for p_id
+```{r}
+
+get_var_profile_df <- function(df, p_id){
+  # print(paste0("P_id: ", p_id))
+  
+  var_list_local <- unique(df$Q_ID)
+  # print(paste0("var_list_local: ", var_list_local))
+  wake_period_list_local <- unique(df$wake_period)
+  # print(paste0("wake_period_list_local: ", wake_period_list_local))
+  # print(paste0("Length of wake period: ", length(wake_period_list_local)))
+  var_profile_df <- matrix(ncol = length(var_list_local) + 2, nrow = length(wake_period_list_local))
+
+  for (i in 1:length(wake_period_list_local)){
+    # print(paste0("i: ", i))
+    
+    var_profile_df[i, 1] <- p_id
+    # print(var_profile_df[i, 1])
+    var_profile_df[i, 2] <- wake_period_list_local[[i]][1]
+    for (j in 1:length(var_list_local)){
+      var_profile_df[i, j + 2] <- get_var_profile(df, var_list_local[[j]][1], wake_period_list_local[[i]][1])
+    }
+    
+  }
+
+  var_profile_df <- as.data.frame(var_profile_df)
+  col_names <- c("p_id", "wake_period", var_list_local)
+  
+  names(var_profile_df) <- col_names
+  return (var_profile_df)
+}
+
+
+
+```
