@@ -138,6 +138,7 @@ time_daily_long_df$Q_ID <- gsub('[Q]{1}\\d{1,2}_', '', time_daily_long_df$Q_D)
 
 ```
 
+
 ## Read the daily report file
 ```{r}
 
@@ -224,6 +225,9 @@ get_var_profile <- function(df, variable, wake_period_name){
     # print(val_list)
     tt <- table(val_list)
     profile_type <- names(tt[which.max(tt)])
+    if (is.null(profile_type)){
+      profile_type = NA
+    }
     # print(profile_type)
     return(profile_type)
   } else {
@@ -272,7 +276,7 @@ get_var_profile_df <- function(df, p_id){
 ## Create a test for a sample user
 ```{r}
 
-p_id <- "sharpnessnextpouch@timestudy_com"
+p_id <- "annuitybreechesdesigned@timestudy_com"
 
 pid_subset_df <- prepare_pid_subset(time_daily_long_df, combined_report_df, p_id)
 
@@ -288,6 +292,24 @@ get_wakeperiod_EOD_df <- function(response_df, report_df, user_id){
   user_id_subset <- prepare_pid_subset(response_df, report_df, user_id)
   user_var_profile_df <- get_var_profile_df(user_id_subset, user_id)
   return(user_var_profile_df)
+}
+
+```
+
+Now create a concatinated dataframe for all the users
+```{r}
+
+combined_df = data.frame()
+
+p_id_list <- unique(time_daily_long_df$Participant_ID)
+
+for (username in p_id_list){
+  username <- paste0(username, '@timestudy_com')
+  print(username)
+  temp_pid_df <- get_wakeperiod_EOD_df(time_daily_long_df, combined_report_df, username)
+  # head(temp_pid_df)
+  combined_df <- rbind(combined_df, temp_pid_df)
+  # tail(combined_df)
 }
 
 ```
