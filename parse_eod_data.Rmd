@@ -314,3 +314,10 @@ for (username in p_id_list){
 
 ```
 
+## write the file to csv
+```{r}
+
+write.csv(combined_df, file = "D:/new_data_pre_processed/eod_trajectories_combined.csv", row.names = FALSE, sep = ",", quote = FALSE)
+
+```
+
