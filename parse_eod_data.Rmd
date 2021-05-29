@@ -129,4 +129,12 @@ filter_date <- as.POSIXct("2020-06-01 00:00:00.000", format="%Y-%m-%d %H:%M:%OS"
 time_daily_long_df <- subset(time_daily_long_df, time_daily_long_df$prompt_date_time >= filter_date)
 ```
 
+## Remove the Q* from question id
+```{r}
+
+# pattern = "[Q]{1}\d{1,2}_"
+
+time_daily_long_df$Q_ID <- gsub('[Q]{1}\\d{1,2}_', '', time_daily_long_df$Q_D)
+
+```
 
