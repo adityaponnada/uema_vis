@@ -280,3 +280,15 @@ pid_var_profile_df <- get_var_profile_df(pid_subset_df, p_id)
 
 ```
 
+
+## Create a function get the dataframe for wake period profiles
+```{r}
+
+get_wakeperiod_EOD_df <- function(response_df, report_df, user_id){
+  user_id_subset <- prepare_pid_subset(response_df, report_df, user_id)
+  user_var_profile_df <- get_var_profile_df(user_id_subset, user_id)
+  return(user_var_profile_df)
+}
+
+```
+
