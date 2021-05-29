@@ -107,3 +107,217 @@ time_daily_long_df <- reshape(combined_ema_time_daily_df, direction="long",
 time_daily_long_df <- time_daily_long_df[order(time_daily_long_df$Participant_ID, time_daily_long_df$Initial_Prompt_Local_Time), ]
 ```
 
+## Filter out unwanted questions
+```{r}
+questions_to_include <- c("Q1_SAD", "Q2_HAPP", "Q3_FATIG", "Q4_END", "Q5_REL", "Q6_TEN", "Q7_STRESS", "Q8_FRUST", "Q9_NERV", "Q10_FOC", "Q11_RESIST", "Q12_DEM", "Q14_ROUT", "Q15_SICK")
+```
+
+Only select these rows
+```{r}
+time_daily_long_df <- subset(time_daily_long_df, time_daily_long_df$Q_D %in% questions_to_include)
+```
+
+## Convert the prompt time to date time object
+```{r}
+time_daily_long_df$prompt_date_time <- as.POSIXct(time_daily_long_df$Initial_Prompt_Local_Time, format="%Y-%m-%d %H:%M:%OS")
+```
+
+## Temporarily remove data before june 1 2020
+```{r}
+filter_date <- as.POSIXct("2020-06-01 00:00:00.000", format="%Y-%m-%d %H:%M:%OS")
+
+time_daily_long_df <- subset(time_daily_long_df, time_daily_long_df$prompt_date_time >= filter_date)
+```
+
+## Remove the Q* from question id
+```{r}
+
+# pattern = "[Q]{1}\d{1,2}_"
+
+time_daily_long_df$Q_ID <- gsub('[Q]{1}\\d{1,2}_', '', time_daily_long_df$Q_D)
+
+```
+
+
+## Read the daily report file
+```{r}
+
+
+combined_report_file = paste0('D:/new_data_pre_processed', '/combined_report_N70.csv')
+combined_report_df <- read.csv(combined_report_file, header = TRUE, sep = ',')
+
+```
+
+## Convert sleep wake times to date time objects
+```{r}
+
+
+combined_report_df$current_wake_time <- as.POSIXct(combined_report_df$current_wake_time, format="%Y-%m-%d %H:%M:%S")
+combined_report_df$current_sleep_time <- as.POSIXct(combined_report_df$current_sleep_time, format="%Y-%m-%d %H:%M:%S")
+
+```
+
+## create a subset for participant
+uEMA combined file
+
+```{r}
+
+get_EOD_pid_df <- function(df, p_id){
+  p_id_split <- strsplit(p_id, '@timestudy_com')[[1]]
+  pid_df <- subset(df, df$Participant_ID == p_id_split)
+  return(pid_df)
+}
+
+```
+
+Combined report file
+```{r}
+
+get_report_pid_df <- function(df, p_id){
+  pid_df <- subset(df, df$participant_ID == p_id)
+  pid_df <- subset(pid_df, pid_df$study_mode == "TIME")
+  return(pid_df)
+}
+
+```
+
+## Create a subset for the construct
+uEMA combined file
+
+```{r}
+
+get_EOD_pid_var_df <- function(df, variable){
+  var_df <- subset(df, df$Q_ID == variable)
+  return(var_df)
+}
+
+```
+
+## get p_id_subset
+```{r}
+
+prepare_pid_subset <- function(df, report_df, p_id) {
+  pid_subset_df <- get_EOD_pid_df(df, p_id)
+  pid_report_df <- get_report_pid_df(report_df, p_id)
+  
+  for(i in 1:nrow(pid_report_df)){
+  # print(paste0(i, " _ ", pid_report_df$current_wake_time[i]))
+  pid_subset_df$wake_period[pid_subset_df$prompt_date_time >= pid_report_df$current_wake_time[i] & pid_subset_df$prompt_date_time <= pid_report_df$current_sleep_time[i]] <- paste0("Wake_period_", i)
+  # print(paste0("Wake_period_", i))
+  }
+  
+  return(pid_subset_df)
+  
+}
+
+```
+
+
+## Create function to get trajectory
+```{r}
+
+get_var_profile <- function(df, variable, wake_period_name){
+  wake_subset_df <- subset(df, df$wake_period == wake_period_name & df$Q_ID == variable)
+  # wake_subset_df <- subset(wake_subset_df, wake_subset_df$Q_ID == variable)
+  # print(wake_subset_df)
+  if (nrow(wake_subset_df) != 0){
+    val_list = wake_subset_df$ANS_TEXT
+    # print(val_list)
+    tt <- table(val_list)
+    profile_type <- names(tt[which.max(tt)])
+    if (is.null(profile_type)){
+      profile_type = NA
+    }
+    # print(profile_type)
+    return(profile_type)
+  } else {
+    return(NA)
+  }
+}
+
+```
+
+## Generate wake period profile for each variable for p_id
+```{r}
+
+get_var_profile_df <- function(df, p_id){
+  # print(paste0("P_id: ", p_id))
+  
+  var_list_local <- unique(df$Q_ID)
+  # print(paste0("var_list_local: ", var_list_local))
+  wake_period_list_local <- unique(df$wake_period)
+  # print(paste0("wake_period_list_local: ", wake_period_list_local))
+  # print(paste0("Length of wake period: ", length(wake_period_list_local)))
+  var_profile_df <- matrix(ncol = length(var_list_local) + 2, nrow = length(wake_period_list_local))
+
+  for (i in 1:length(wake_period_list_local)){
+    # print(paste0("i: ", i))
+    
+    var_profile_df[i, 1] <- p_id
+    # print(var_profile_df[i, 1])
+    var_profile_df[i, 2] <- wake_period_list_local[[i]][1]
+    for (j in 1:length(var_list_local)){
+      var_profile_df[i, j + 2] <- get_var_profile(df, var_list_local[[j]][1], wake_period_list_local[[i]][1])
+    }
+    
+  }
+
+  var_profile_df <- as.data.frame(var_profile_df)
+  col_names <- c("p_id", "wake_period", var_list_local)
+  
+  names(var_profile_df) <- col_names
+  return (var_profile_df)
+}
+
+
+
+```
+
+## Create a test for a sample user
+```{r}
+
+p_id <- "annuitybreechesdesigned@timestudy_com"
+
+pid_subset_df <- prepare_pid_subset(time_daily_long_df, combined_report_df, p_id)
+
+pid_var_profile_df <- get_var_profile_df(pid_subset_df, p_id)
+
+```
+
+
+## Create a function get the dataframe for wake period profiles
+```{r}
+
+get_wakeperiod_EOD_df <- function(response_df, report_df, user_id){
+  user_id_subset <- prepare_pid_subset(response_df, report_df, user_id)
+  user_var_profile_df <- get_var_profile_df(user_id_subset, user_id)
+  return(user_var_profile_df)
+}
+
+```
+
+Now create a concatinated dataframe for all the users
+```{r}
+
+combined_df = data.frame()
+
+p_id_list <- unique(time_daily_long_df$Participant_ID)
+
+for (username in p_id_list){
+  username <- paste0(username, '@timestudy_com')
+  print(username)
+  temp_pid_df <- get_wakeperiod_EOD_df(time_daily_long_df, combined_report_df, username)
+  # head(temp_pid_df)
+  combined_df <- rbind(combined_df, temp_pid_df)
+  # tail(combined_df)
+}
+
+```
+
+## write the file to csv
+```{r}
+
+write.csv(combined_df, file = "D:/new_data_pre_processed/eod_trajectories_combined.csv", row.names = FALSE, sep = ",", quote = FALSE)
+
+```
+
