@@ -121,10 +121,24 @@ ggplot(count_df, aes(x = eod_stress, y = uema_stress)) + geom_tile(aes(fill = Fr
 ```
 
 ## Create helper functions
+get frequency table from main data frame
+
 ```{r}
 get_ans_freq_table <- function(df, uema_var, ema_var){
   freq_table <- table(df[[ema_var]], df[[uema_var]])
   return(freq_table)
 }
+```
+
+get the ema uema pair frequency data frame
+```{r}
+
+get_var_freq_plot <- function(df, uema_var, ema_var){
+  var_only_subset_df <- df[, c(uema_var, ema_var)]
+  var_pair_count_df <- as.data.frame(table(var_only_subset_df))
+  g_plot <- ggplot(var_pair_count_df, aes(x = eod_stress, y = uema_stress)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + theme(axis.title.y = element_blank())
+  return(g_plot)
+}
+
 ```
 
