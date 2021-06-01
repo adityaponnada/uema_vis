@@ -116,7 +116,7 @@ var_comp_df <- merged_df[, c("uema_nervous", "eod_nerv")]
 
 count_df <- as.data.frame(table(var_comp_df))
 
-ggplot(count_df, aes(x = uema_nervous, y = eod_nerv)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + theme(axis.title.y = element_blank())
+ggplot(count_df, aes(x = eod_nerv, y = uema_nervous)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + theme(axis.title.y = element_blank())
 
 ```
 
