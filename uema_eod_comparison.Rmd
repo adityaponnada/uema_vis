@@ -152,7 +152,7 @@ get_pid_var_freq_plot <- function(df, uema_var, ema_var, pid){
   print(head(pid_column_df))
   freq_df <- as.data.frame(table(pid_column_df))
   print(head(freq_df))
-  g_plot <- ggplot(freq_df, aes(x = ema_var, y = uema_var)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + theme(axis.title.y = element_blank()) + ggtitle(pid)
+  g_plot <- ggplot(freq_df, aes_string(x = ema_var, y = uema_var)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + theme(axis.title.y = element_blank()) + ggtitle(pid)
   return(g_plot)
   
 }
