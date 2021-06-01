@@ -136,7 +136,7 @@ get the ema uema pair frequency data frame
 get_var_freq_plot <- function(df, uema_var, ema_var){
   var_only_subset_df <- df[, c(uema_var, ema_var)]
   var_pair_count_df <- as.data.frame(table(var_only_subset_df))
-  g_plot <- ggplot(var_pair_count_df, aes_string(x = ema_var, y = uema_var)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + theme(axis.title.y = element_blank())
+  g_plot <- ggplot(var_pair_count_df, aes_string(x = ema_var, y = uema_var)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + theme(axis.title.y = element_blank()) + ggtitle(paste0(uema_var, " and ", ema_var))
   return(g_plot)
 }
 
@@ -147,11 +147,8 @@ get the ema uema pair frequency plot for the selected participant
 
 get_pid_var_freq_plot <- function(df, uema_var, ema_var, pid){
   p_id_subset <- subset(df, df$p_id == pid)
-  print(head(p_id_subset))
   pid_column_df <- p_id_subset[, c(uema_var,ema_var)]
-  print(head(pid_column_df))
   freq_df <- as.data.frame(table(pid_column_df))
-  print(head(freq_df))
   g_plot <- ggplot(freq_df, aes_string(x = ema_var, y = uema_var)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + theme(axis.title.y = element_blank()) + ggtitle(pid)
   return(g_plot)
   
