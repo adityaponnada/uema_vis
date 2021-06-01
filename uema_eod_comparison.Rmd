@@ -1,0 +1,36 @@
+---
+title: "uEMA vs EOD"
+author: "Aditya Ponnada"
+date: "5/31/2021"
+output: html_document
+---
+
+## Import library
+```{r}
+library(ggplot2)
+library(plotly)
+library(psych)
+library(rmcorr)
+library(lme4)
+```
+
+## Read the uEMA file
+```{r}
+
+uema_path <- "D:/new_data_pre_processed/uema_trajectories_combined.csv"
+
+uema_df <- read.csv(file=uema_path, sep = ",", header = TRUE)
+
+
+
+```
+
+## Read the eod file
+```{r}
+
+eod_path <- "D:/new_data_pre_processed/eod_trajectories_combined.csv"
+
+eod_df <- read.csv(file=eod_path, sep = ",", header = TRUE)
+
+```
+
