@@ -89,4 +89,11 @@ names(eod_df) <- new_eod
 
 ```
 
+## Merge the two dfs
+merging by using p_id and wake period only
+```{r}
+
+merged_df <-merge(uema_df,eod_df,by=c("p_id","wake_period")) 
+
+```
 
