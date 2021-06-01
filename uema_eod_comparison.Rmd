@@ -34,3 +34,20 @@ eod_df <- read.csv(file=eod_path, sep = ",", header = TRUE)
 
 ```
 
+## Keep only the common user names
+```{r}
+
+uema_pids <- unique(uema_df$p_id)
+
+eod_df <- subset(eod_df, eod_df$p_id %in% uema_pids)
+
+```
+
+## Remove the "unknown user" account
+```{r}
+
+uema_df <- subset(uema_df, uema_df$p_id != "unknown_user")
+
+
+```
+
