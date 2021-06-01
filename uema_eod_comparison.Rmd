@@ -112,11 +112,19 @@ table(merged_df$uema_nervous, merged_df$eod_nerv)
 
 Try heatmaps
 ```{r}
-var_comp_df <- merged_df[, c("uema_nervous", "eod_nerv")]
+var_comp_df <- merged_df[, c("uema_stress", "eod_stress")]
 
 count_df <- as.data.frame(table(var_comp_df))
 
-ggplot(count_df, aes(x = eod_nerv, y = uema_nervous)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + theme(axis.title.y = element_blank())
+ggplot(count_df, aes(x = eod_stress, y = uema_stress)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + theme(axis.title.y = element_blank())
 
+```
+
+## Create helper functions
+```{r}
+get_ans_freq_table <- function(df, uema_var, ema_var){
+  freq_table <- table(df[[ema_var]], df[[uema_var]])
+  return(freq_table)
+}
 ```
 
