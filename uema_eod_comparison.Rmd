@@ -97,3 +97,62 @@ merged_df <-merge(uema_df,eod_df,by=c("p_id","wake_period"))
 
 ```
 
+
+## test code to get frequency matrix plot between two columns
+```{r}
+
+ggplot(merged_df, aes(uema_nervous, ..count..)) + geom_bar(aes(fill = eod_nerv), position = "dodge")
+
+```
+
+Print table
+```{r}
+table(merged_df$uema_nervous, merged_df$eod_nerv)
+```
+
+Try heatmaps
+```{r}
+var_comp_df <- merged_df[, c("uema_stress", "eod_stress")]
+
+count_df <- as.data.frame(table(var_comp_df))
+
+ggplot(count_df, aes(x = eod_stress, y = uema_stress)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + theme(axis.title.y = element_blank())
+
+```
+
+## Create helper functions
+get frequency table from main data frame
+
+```{r}
+get_ans_freq_table <- function(df, uema_var, ema_var){
+  freq_table <- table(df[[ema_var]], df[[uema_var]])
+  return(freq_table)
+}
+```
+
+get the ema uema pair frequency data frame
+```{r}
+
+get_var_freq_plot <- function(df, uema_var, ema_var){
+  var_only_subset_df <- df[, c(uema_var, ema_var)]
+  var_pair_count_df <- as.data.frame(table(var_only_subset_df))
+  g_plot <- ggplot(var_pair_count_df, aes_string(x = ema_var, y = uema_var)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + theme(axis.title.y = element_blank()) + ggtitle(paste0(uema_var, " and ", ema_var))
+  return(g_plot)
+}
+
+```
+
+get the ema uema pair frequency plot for the selected participant
+```{r}
+
+get_pid_var_freq_plot <- function(df, uema_var, ema_var, pid){
+  p_id_subset <- subset(df, df$p_id == pid)
+  pid_column_df <- p_id_subset[, c(uema_var,ema_var)]
+  freq_df <- as.data.frame(table(pid_column_df))
+  g_plot <- ggplot(freq_df, aes_string(x = ema_var, y = uema_var)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + theme(axis.title.y = element_blank()) + ggtitle(pid)
+  return(g_plot)
+  
+}
+
+```
+
