@@ -1,0 +1,99 @@
+---
+title: "uEMA vs EOD"
+author: "Aditya Ponnada"
+date: "5/31/2021"
+output: html_document
+---
+
+## Import library
+```{r}
+library(ggplot2)
+library(plotly)
+library(psych)
+library(rmcorr)
+library(lme4)
+```
+
+## Read the uEMA file
+```{r}
+
+uema_path <- "D:/new_data_pre_processed/uema_trajectories_combined.csv"
+
+uema_df <- read.csv(file=uema_path, sep = ",", header = TRUE)
+
+
+
+```
+
+## Read the eod file
+```{r}
+
+eod_path <- "D:/new_data_pre_processed/eod_trajectories_combined.csv"
+
+eod_df <- read.csv(file=eod_path, sep = ",", header = TRUE)
+
+```
+
+## Keep only the common user names
+```{r}
+
+uema_pids <- unique(uema_df$p_id)
+
+eod_df <- subset(eod_df, eod_df$p_id %in% uema_pids)
+
+```
+
+## Remove the "unknown user" account
+```{r}
+
+uema_df <- subset(uema_df, uema_df$p_id != "unknown_user")
+
+```
+
+## Rename the columns
+
+Rename uema columns
+```{r}
+
+uema_names <- names(uema_df)
+
+new_uema <- c()
+
+for (name in uema_names){
+  if (name != "p_id" && name != "wake_period"){
+    name <- paste0("uema_", name)
+  }
+  new_uema <- c(new_uema, name)
+}
+
+names(uema_df) <- new_uema
+
+```
+
+Rename EMA columns
+```{r}
+
+eod_names <- names(eod_df)
+
+new_eod <- c()
+
+for (name in eod_names){
+  name <- tolower(name)
+  if (name != "p_id" && name != "wake_period"){
+    name <- paste0("eod_", name)
+  }
+  new_eod <- c(new_eod, name)
+}
+
+names(eod_df) <- new_eod
+
+```
+
+## Merge the two dfs
+merging by using p_id and wake period only
+```{r}
+
+merged_df <-merge(uema_df,eod_df,by=c("p_id","wake_period")) 
+
+```
+
