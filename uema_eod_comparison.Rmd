@@ -97,3 +97,26 @@ merged_df <-merge(uema_df,eod_df,by=c("p_id","wake_period"))
 
 ```
 
+
+## test code to get frequency matrix plot between two columns
+```{r}
+
+ggplot(merged_df, aes(uema_nervous, ..count..)) + geom_bar(aes(fill = eod_nerv), position = "dodge")
+
+```
+
+Print table
+```{r}
+table(merged_df$uema_nervous, merged_df$eod_nerv)
+```
+
+Try heatmaps
+```{r}
+var_comp_df <- merged_df[, c("uema_nervous", "eod_nerv")]
+
+count_df <- as.data.frame(table(var_comp_df))
+
+ggplot(count_df, aes(x = uema_nervous, y = eod_nerv)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + theme(axis.title.y = element_blank())
+
+```
+
