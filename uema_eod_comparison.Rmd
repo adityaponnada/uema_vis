@@ -48,6 +48,23 @@ eod_df <- subset(eod_df, eod_df$p_id %in% uema_pids)
 
 uema_df <- subset(uema_df, uema_df$p_id != "unknown_user")
 
+```
+
+## Rename the columns
+```{r}
+
+uema_names <- names(uema_df)
+
+new_uema <- c()
+
+for (name in uema_names){
+  if (name != "p_id" && name != "wake_period"){
+    name <- paste0("uema_", name)
+  }
+  new_uema <- c(new_uema, name)
+}
+
+names(uema_df) <- new_uema
 
 ```
 
