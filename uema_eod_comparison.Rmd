@@ -174,6 +174,44 @@ pid_trajectories_freq_df <- get_pid_trajectory_freqs(uema_df)
 ```
 
 
+Recode participant id and trajectory id
+```{r}
+plist <- unique(pid_trajectories_freq_df$user_name)
+pindex <- c(1:length(plist))
+pindex <- paste("P_", pindex, sep="")
+trajectory_mapping <- c("Consistent-high" = "6", "Accumulation" = "5", "Fluctuating" = "4", "Consistent-medium" = "3", "Dissipation" = "2", "Consistent-low" = "1")
+
+pmap_df <- data.frame(plist, pindex)
+names(pmap_df) <- c("user_name", "p_index")
+
+pid_trajectories_freq_df <- merge(pid_trajectories_freq_df, pmap_df, by.x = "user_name")
+```
+
+map category values
+```{r}
+
+
+pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Consistent-high"] <- "6"
+pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Accumulation"] <- "5"
+pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Fluctuating"] <- "4"
+pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Consistent-medium"] <- "3"
+pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Dissipation"] <- "2"
+pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Consistent-low"] <- "1"
+
+
+```
+
+
+plot grouped by participant
+```{r}
+
+ggplot(pid_trajectories_freq_df, aes(x = trajectory_type, y = var_name)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + ggtitle("Trajectories vs variables") + ylab("uEMA constructs") + xlab("Wake period trajectory types") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) + facet_wrap(~p_index, nrow = 3)
+
+
+```
+
+
+
 ## Keep only the common user names
 ```{r}
 
