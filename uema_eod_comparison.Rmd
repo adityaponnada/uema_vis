@@ -12,6 +12,7 @@ library(plotly)
 library(psych)
 library(rmcorr)
 library(lme4)
+library(dplyr)
 ```
 
 ## Read the uEMA file
@@ -210,4 +211,27 @@ table(peak_effects_collection_df$uema_stress, peak_effects_collection_df$eod_str
 
 ```
 
+## Convert to scores
+```{r}
+merged_copy_df <- merged_df
+
+eod_mapping <- c("Extremely" = 5, "Very much so" = 5, "Quite a bit" = 4, "Moderately" = 3, "A little" = 2, "Not at all" = 1)
+uema_mapping <- c("Consistent-high" = 6, "Accumulation" = 5, "Fluctuating" = 4, "Consistent-medium" = 3, "Dissipation" = 2, "Consistent-low" = 1)
+
+for (vars in var_dict){
+  uema_var <- vars[[1]]
+  eod_var <- vars[[2]]
+  print(uema_var)
+  print(eod_var)
+  
+  merged_copy_df[[uema_var]] <- uema_mapping[merged_copy_df[[uema_var]]]
+  merged_copy_df[[eod_var]] <- eod_mapping[merged_copy_df[[eod_var]]]
+  
+  
+}
+
+```
+
+## try repeated measure correlations
+Test code
 
