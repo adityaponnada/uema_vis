@@ -131,6 +131,47 @@ construct_trajectory_df <- dcast(trajectory_dist, var_name ~ Var1, value.var="Fr
 
 ```
 
+Get participant-wise construct-trajectory frequencies
+```{r}
+
+get_pid_trajectory_freqs <- function(df){
+  user_list <- unique(df$p_id)
+  user_freq_df <- data.frame()
+  for (user in user_list){
+    print(user)
+    user_df <- subset(df, df$p_id == user)
+    freq_df <- data.frame()
+  col_names <- names(user_df)
+  col_names <- col_names[3:ncol(user_df)]
+  # col_to_remove <- c("sleep")
+  # col_names <- col_names[!col_names %in% col_to_remove]
+  for (col in col_names){
+    print(col)
+    col_table <- table(user_df[[col]])
+    # print(col_table)
+    if (length(col_table) != 0){
+      col_df <- as.data.frame(col_table)
+      col_df$var_name <- col
+      col_df <- col_df %>% select(var_name, everything())
+      col_df$user_name <- user
+      col_df <- col_df %>% select(user_name, everything())
+      freq_df <- rbind(freq_df, col_df)
+    }
+    
+  }
+  user_freq_df <- rbind(user_freq_df, freq_df)
+  }
+  
+  return(user_freq_df)
+}
+
+
+```
+
+Get the dataframe for the uema_df
+```{r}
+pid_trajectories_freq_df <- get_pid_trajectory_freqs(uema_df)
+```
 
 
 ## Keep only the common user names
