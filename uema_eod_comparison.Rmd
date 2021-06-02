@@ -72,6 +72,33 @@ dist_wh <- get_waking_hr_dist(uema_df)
 
 ```
 
+Count the occurrences of different trajectory types across the dataframe
+```{r}
+
+
+
+get_trajectory_freqs <- function(df){
+  freq_df <- data.frame()
+  col_names <- names(df)
+  col_names <- col_names[3:ncol(df)]
+  for (col in col_names){
+    col_table <- table(df[[col]])
+    col_df <- as.data.frame(col_table)
+    col_df$var_name <- col
+    col_df <- col_df %>% select(var_name, everything())
+    freq_df <- rbind(freq_df, col_df)
+  }
+  
+  return(freq_df)
+}
+
+```
+
+Now get the df
+```{r}
+trajectory_dist <- get_trajectory_freqs(uema_df)
+```
+
 
 ## Keep only the common user names
 ```{r}
@@ -81,6 +108,7 @@ uema_pids <- unique(uema_df$p_id)
 eod_df <- subset(eod_df, eod_df$p_id %in% uema_pids)
 
 ```
+
 
 
 ## Rename the columns
