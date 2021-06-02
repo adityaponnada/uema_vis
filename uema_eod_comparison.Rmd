@@ -156,3 +156,26 @@ get_pid_var_freq_plot <- function(df, uema_var, ema_var, pid){
 
 ```
 
+get rows satisfying a criteria
+```{r}
+
+get_peak_effects_df <- function(df, uema_var, ema_var){
+  var_df <- df[, c("p_id", "wake_period", uema_var, ema_var)]
+  peak_effects_df <- subset(var_df, (var_df[[uema_var]] == "Accumulation" | var_df[[uema_var]] == "Fluctuating" | var_df[[uema_var]] == "Dissipation") & (var_df[[ema_var]] == "Extremely" | var_df[[ema_var]] == "Quite a bit"))
+  return(peak_effects_df)
+}
+
+```
+
+
+## Try simple queries to get the peak effects
+peak effects can be
+
+uema fluctuation, accumulation, dissipation --> Extremely or Quite a bit
+
+```{r}
+
+get_ans_freq_table(merged_df, "uema_stress", "eod_stress")
+
+```
+
