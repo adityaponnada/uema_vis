@@ -202,5 +202,12 @@ peak_effects_df$perc <- peak_effects_df$count_list/peak_effects_df$total_meas_li
 ```
 
 
+## get peak effects summary table
+```{r}
+peak_effects_collection_df <- get_peak_effects_df(merged_df, "uema_stress", "eod_stress")
+
+table(peak_effects_collection_df$uema_stress, peak_effects_collection_df$eod_stress)
+
+```
 
 
