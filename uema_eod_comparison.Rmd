@@ -167,6 +167,34 @@ get_peak_effects_df <- function(df, uema_var, ema_var){
 
 ```
 
+get number of rows for peak effects of each construct
+
+```{r}
+var_dict <- list(c("uema_stress", "eod_stress"), c("uema_nervous", "eod_nerv"), c("uema_tense", "eod_ten"), c("uema_happy", "eod_happ"), c("uema_fatigue", "eod_fatig"), c("uema_relax", "eod_rel"), c("uema_sad", "eod_sad"), c("uema_focus", "eod_foc"), c("uema_control", "eod_resist"))
+
+```
+
+Run a loop
+```{r}
+
+var_list <- c()
+count_list <- c()
+
+for (vars in var_dict){
+  print(vars[[1]])
+  temp_df <- get_peak_effects_df(merged_df, vars[[1]], vars[[2]])
+  total_observation <- nrow(temp_df)
+  var_name <- strsplit(vars[[1]], 'uema_')[[1]][2]
+  print(var_name)
+  # var_name <- vars[[1]]
+  var_list <- c(var_list, var_name)
+  count_list <- c(count_list, total_observation)
+}
+
+peak_effects_df <- data.frame(var_list, count_list)
+
+```
+
 
 ## Try simple queries to get the peak effects
 peak effects can be
