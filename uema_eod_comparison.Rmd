@@ -179,19 +179,25 @@ Run a loop
 
 var_list <- c()
 count_list <- c()
+total_meas_list <- c()
 
 for (vars in var_dict){
-  print(vars[[1]])
+  # print(vars[[1]])
   temp_df <- get_peak_effects_df(merged_df, vars[[1]], vars[[2]])
   total_observation <- nrow(temp_df)
   var_name <- strsplit(vars[[1]], 'uema_')[[1]][2]
-  print(var_name)
+  # print(var_name)
   # var_name <- vars[[1]]
+  var_search <- vars[[1]]
+  total_uema_count <- length(na.omit(merged_df[[var_search]]))
   var_list <- c(var_list, var_name)
   count_list <- c(count_list, total_observation)
+  total_meas_list <- c(total_meas_list, total_uema_count)
 }
 
-peak_effects_df <- data.frame(var_list, count_list)
+peak_effects_df <- data.frame(var_list, count_list, total_meas_list)
+
+peak_effects_df$perc <- peak_effects_df$count_list/peak_effects_df$total_meas_list
 
 ```
 
