@@ -35,6 +35,44 @@ eod_df <- read.csv(file=eod_path, sep = ",", header = TRUE)
 
 ```
 
+
+## Remove the "unknown user" account
+```{r}
+
+uema_df <- subset(uema_df, uema_df$p_id != "unknown_user")
+
+```
+
+
+## Summarize the distribution overall
+First, across all users and constructs --> to check if there is a general variability in responses
+
+```{r}
+num_waking_hours <- nrow(uema_df)
+num_pids <- length(unique(uema_df$p_id))
+
+
+```
+
+Get the distribution of waking hours
+```{r}
+get_waking_hr_dist <- function(df){
+  dist_table <- table(uema_df$p_id)
+  dist_df <- as.data.frame(dist_table)
+  max_wh <- max(dist_df$Freq)
+  min_wh <- min(dist_df$Freq)
+  median_wh <- median(dist_df$Freq)
+  return(c(min_wh, median_wh, max_wh))
+}
+```
+
+Get distribution values
+```{r}
+dist_wh <- get_waking_hr_dist(uema_df)
+
+```
+
+
 ## Keep only the common user names
 ```{r}
 
@@ -44,12 +82,6 @@ eod_df <- subset(eod_df, eod_df$p_id %in% uema_pids)
 
 ```
 
-## Remove the "unknown user" account
-```{r}
-
-uema_df <- subset(uema_df, uema_df$p_id != "unknown_user")
-
-```
 
 ## Rename the columns
 
