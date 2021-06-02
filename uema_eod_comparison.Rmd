@@ -106,6 +106,23 @@ trajectory_aggregate_df <- aggregate(.~var_name+Var1, trajectory_dist, sum)
 
 ```
 
+Aggregate for each trajectory type --> across all constructs and users
+
+```{r}
+trajectory_summary_df <- aggregate(trajectory_dist$Freq,
+                by = list(trajectory_dist$Var1),
+                FUN = sum)
+
+```
+
+Plot by variable --> heat map
+```{r}
+
+ggplot(trajectory_dist, aes(x = Var1, y = var_name)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + ggtitle("Trajectories vs variables") + ylab("uEMA constructs") + xlab("Wake period trajectory types") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+```
+
 
 ## Keep only the common user names
 ```{r}
