@@ -221,8 +221,6 @@ uema_mapping <- c("Consistent-high" = 6, "Accumulation" = 5, "Fluctuating" = 4, 
 for (vars in var_dict){
   uema_var <- vars[[1]]
   eod_var <- vars[[2]]
-  print(uema_var)
-  print(eod_var)
   
   merged_copy_df[[uema_var]] <- uema_mapping[merged_copy_df[[uema_var]]]
   merged_copy_df[[eod_var]] <- eod_mapping[merged_copy_df[[eod_var]]]
@@ -234,4 +232,10 @@ for (vars in var_dict){
 
 ## try repeated measure correlations
 Test code
+```{r}
+
+merged_copy_df$p_id <- as.factor(merged_copy_df$p_id)
+
+rmcorr(participant = p_id, measure1 = uema_stress, measure2 = eod_stress, dataset = merged_copy_df)
+```
 
