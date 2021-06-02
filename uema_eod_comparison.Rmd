@@ -13,6 +13,7 @@ library(psych)
 library(rmcorr)
 library(lme4)
 library(dplyr)
+library(reshape2)
 ```
 
 ## Read the uEMA file
@@ -122,6 +123,14 @@ ggplot(trajectory_dist, aes(x = Var1, y = var_name)) + geom_tile(aes(fill = Freq
 panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 ```
+
+get construct wise trajectory table
+```{r}
+
+construct_trajectory_df <- dcast(trajectory_dist, var_name ~ Var1, value.var="Freq")
+
+```
+
 
 
 ## Keep only the common user names
