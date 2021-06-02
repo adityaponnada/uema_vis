@@ -12,6 +12,7 @@ library(plotly)
 library(psych)
 library(rmcorr)
 library(lme4)
+library(dplyr)
 ```
 
 ## Read the uEMA file
@@ -202,5 +203,65 @@ peak_effects_df$perc <- peak_effects_df$count_list/peak_effects_df$total_meas_li
 ```
 
 
+## get peak effects summary table
+```{r}
+peak_effects_collection_df <- get_peak_effects_df(merged_df, "uema_stress", "eod_stress")
 
+table(peak_effects_collection_df$uema_stress, peak_effects_collection_df$eod_stress)
+
+```
+
+## Convert to scores
+```{r}
+merged_copy_df <- merged_df
+
+eod_mapping <- c("Extremely" = 5, "Very much so" = 5, "Quite a bit" = 4, "Moderately" = 3, "A little" = 2, "Not at all" = 1)
+uema_mapping <- c("Consistent-high" = 6, "Accumulation" = 5, "Fluctuating" = 4, "Consistent-medium" = 3, "Dissipation" = 2, "Consistent-low" = 1)
+
+for (vars in var_dict){
+  uema_var <- vars[[1]]
+  eod_var <- vars[[2]]
+  
+  merged_copy_df[[uema_var]] <- uema_mapping[merged_copy_df[[uema_var]]]
+  merged_copy_df[[eod_var]] <- eod_mapping[merged_copy_df[[eod_var]]]
+  
+  
+}
+
+```
+
+## try repeated measure correlations
+Test code
+```{r}
+
+merged_copy_df$p_id <- as.factor(merged_copy_df$p_id)
+
+merged_stress_df <- merged_copy_df[, c("p_id", "uema_stress", "eod_stress")]
+merged_stress_df <- subset(merged_stress_df, !is.na(merged_stress_df$uema_stress))
+
+test_rmcorr <- rmcorr(participant = p_id, measure1 = uema_stress, measure2 = eod_stress, dataset = merged_stress_df)
+```
+
+## Loop through variables and then compute r
+```{r}
+
+rm_cor_vals <- c()
+var_names <- c()
+p_vals <- c()
+
+for (vars in var_dict){
+  temp_df <- merged_copy_df[, c("p_id", vars[[1]], vars[[2]])]
+  temp_df <- subset(temp_df, !is.na(temp_df[[vars[[1]]]]))
+  rm_corr <- rmcorr(participant = p_id, measure1 = get(vars[[1]]), measure2 = get(vars[[2]]), dataset = temp_df)
+  rm_corr_val <- rm_corr$r
+  rm_cor_vals <- c(rm_cor_vals, rm_corr_val)
+  var_names <- c(var_names, vars[[1]])
+  p_val <- rm_corr$p
+  p_vals <- c(p_vals, p_val)
+}
+
+rmcorr_df <- data.frame(var_names, rm_cor_vals, p_vals)
+
+
+```
 
