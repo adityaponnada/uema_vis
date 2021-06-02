@@ -236,6 +236,9 @@ Test code
 
 merged_copy_df$p_id <- as.factor(merged_copy_df$p_id)
 
-rmcorr(participant = p_id, measure1 = uema_stress, measure2 = eod_stress, dataset = merged_copy_df)
+merged_stress_df <- merged_copy_df[, c("p_id", "uema_stress", "eod_stress")]
+merged_stress_df <- subset(merged_stress_df, !is.na(merged_stress_df$uema_stress))
+
+rmcorr(participant = p_id, measure1 = uema_stress, measure2 = eod_stress, dataset = merged_stress_df)
 ```
 
