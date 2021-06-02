@@ -263,7 +263,7 @@ get_var_profile <- function(df, variable, wake_period_name){
   wake_subset_df <- subset(df, df$wake_period == wake_period_name & df$Q_ID == variable)
   # wake_subset_df <- subset(wake_subset_df, wake_subset_df$Q_ID == variable)
   # print(wake_subset_df)
-  if (nrow(wake_subset_df) != 0){
+  if (nrow(wake_subset_df) > 2){
     slope_list <- c()
     val_list = wake_subset_df$Answer_score
     # print(val_list)
