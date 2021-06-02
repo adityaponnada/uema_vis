@@ -99,6 +99,13 @@ Now get the df
 trajectory_dist <- get_trajectory_freqs(uema_df)
 ```
 
+Aggregate for each construct and trajectory type pair
+```{r}
+
+trajectory_aggregate_df <- aggregate(.~var_name+Var1, trajectory_dist, sum)
+
+```
+
 
 ## Keep only the common user names
 ```{r}
