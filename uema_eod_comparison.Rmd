@@ -199,6 +199,8 @@ uema_100_df <- subset(uema_df, uema_df$p_id_days >= 100)
 
 uema_100_df <- uema_100_df[, !names(uema_100_df) %in% c("n", "p_id_days")]
 
+uema_df <- uema_df[, !names(uema_df) %in% c("n", "p_id_days")]
+
 ```
 
 
