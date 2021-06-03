@@ -188,9 +188,23 @@ get_pid_trajectory_freqs <- function(df){
 
 ```
 
+Create a uema_df with only 100 TIME days and above
+```{r}
+
+uema_df$n <- 1
+
+uema_df$p_id_days <- ave(uema_df$n, uema_df$p_id, FUN = sum)
+
+uema_100_df <- subset(uema_df, uema_df$p_id_days >= 100)
+
+uema_100_df <- uema_100_df[, !names(uema_100_df) %in% c("n", "p_id_days")]
+
+```
+
+
 Get the dataframe for the uema_df
 ```{r}
-pid_trajectories_freq_df <- get_pid_trajectory_freqs(uema_df)
+pid_trajectories_freq_df <- get_pid_trajectory_freqs(uema_100_df)
 ```
 
 
@@ -230,13 +244,13 @@ pid_trajectories_freq_df <- pid_trajectories_freq_df[order(pid_trajectories_freq
 plot grouped by participant
 ```{r}
 
-ggplot(pid_trajectories_freq_df, aes(x = trajectory_type, y = var_name)) + 
+pid_traj_plot <- ggplot(pid_trajectories_freq_df, aes(x = trajectory_type, y = var_name)) + 
   geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + 
   ggtitle("Trajectories vs variables") + 
   ylab("uEMA constructs") + 
   xlab("Wake period trajectory types") + 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) +
-  facet_wrap(~p_index, nrow = 3) + 
+  facet_wrap(~p_index, nrow = 5) + 
   theme(strip.text.x = element_text(size = 6, colour = "black", margin = margin(2,0,2,0, "mm"))) + 
   theme(axis.text.x = element_text(size=6, hjust=1), axis.text.y = element_text(size = 6, hjust = 1))
 
