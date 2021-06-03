@@ -14,6 +14,9 @@ library(rmcorr)
 library(lme4)
 library(dplyr)
 library(reshape2)
+library(cowplot)
+library(patchwork)
+library(gridExtra)
 ```
 
 ## Read the uEMA file
@@ -360,7 +363,11 @@ var_comp_df <- merged_df[, c("uema_stress", "eod_stress")]
 
 count_df <- as.data.frame(table(var_comp_df))
 
-ggplot(count_df, aes(x = eod_stress, y = uema_stress)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + theme(axis.title.y = element_blank())
+var_eod_uema_plot <- ggplot(count_df, aes(x = eod_stress, y = uema_stress)) + 
+  geom_tile(aes(fill = Freq)) + 
+  scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + 
+  theme(axis.title.y = element_blank()) +
+  ggtitle("stress")
 
 ```
 
@@ -380,11 +387,45 @@ get the ema uema pair frequency data frame
 get_var_freq_plot <- function(df, uema_var, ema_var){
   var_only_subset_df <- df[, c(uema_var, ema_var)]
   var_pair_count_df <- as.data.frame(table(var_only_subset_df))
-  g_plot <- ggplot(var_pair_count_df, aes_string(x = ema_var, y = uema_var)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + theme(axis.title.y = element_blank()) + ggtitle(paste0(uema_var, " and ", ema_var))
+  # print(head(var_pair_count_df))
+  g_plot <- ggplot(var_pair_count_df, aes_string(x = ema_var, y = uema_var)) + 
+    geom_tile(aes(fill = Freq)) + 
+    scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + 
+    theme(axis.title.y = element_blank()) + 
+    ggtitle(paste0(uema_var, " and ", ema_var)) + 
+    theme(strip.text.x = element_text(size = 6, colour = "black", margin = margin(2,0,2,0, "mm"))) + 
+    theme(axis.text.x = element_text(size=6, hjust=1), axis.text.y = element_text(size = 6, hjust = 1)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(plot.title = element_text(size=10))
   return(g_plot)
 }
 
 ```
+
+
+Put the var freq plots in a list
+```{r}
+plot_list <- list()
+
+var_dict <- list(c("uema_stress", "eod_stress"), c("uema_nervous", "eod_nerv"), c("uema_tense", "eod_ten"), c("uema_happy", "eod_happ"), c("uema_fatigue", "eod_fatig"), c("uema_relax", "eod_rel"), c("uema_sad", "eod_sad"), c("uema_focus", "eod_foc"), c("uema_control", "eod_resist"), c("uema_frust", "eod_frust"))
+
+for (vars in var_dict){
+  uema_var <- vars[[1]]
+  eod_var <- vars[[2]]
+  var_plot <- get_var_freq_plot(merged_df, uema_var, eod_var)
+  plot_list <- c(plotlist, var_plot)
+}
+
+
+```
+
+Plot the grid
+```{r}
+
+wrap_plots(plist)
+
+```
+
 
 get the ema uema pair frequency plot for the selected participant
 ```{r}
@@ -393,7 +434,13 @@ get_pid_var_freq_plot <- function(df, uema_var, ema_var, pid){
   p_id_subset <- subset(df, df$p_id == pid)
   pid_column_df <- p_id_subset[, c(uema_var,ema_var)]
   freq_df <- as.data.frame(table(pid_column_df))
-  g_plot <- ggplot(freq_df, aes_string(x = ema_var, y = uema_var)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + theme(axis.title.y = element_blank()) + ggtitle(pid)
+  g_plot <- ggplot(freq_df, aes_string(x = ema_var, y = uema_var)) + 
+    geom_tile(aes(fill = Freq)) + 
+    scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + 
+    theme(axis.title.y = element_blank()) + 
+    ggtitle(pid) +
+    theme(strip.text.x = element_text(size = 6, colour = "black", margin = margin(2,0,2,0, "mm"))) + 
+    theme(axis.text.x = element_text(size=6, hjust=1), axis.text.y = element_text(size = 6, hjust = 1))
   return(g_plot)
   
 }
