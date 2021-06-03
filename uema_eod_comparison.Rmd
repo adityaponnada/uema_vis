@@ -119,10 +119,30 @@ trajectory_summary_df <- aggregate(trajectory_dist$Freq,
 Plot by variable --> heat map
 ```{r}
 
-ggplot(trajectory_dist, aes(x = Var1, y = var_name)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + ggtitle("Trajectories vs variables") + ylab("uEMA constructs") + xlab("Wake period trajectory types") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-panel.background = element_blank(), axis.line = element_line(colour = "black"))
+traj_plot <- ggplot(trajectory_dist, aes(x = Var1, y = var_name)) + 
+  geom_tile(aes(fill = Freq)) + 
+  scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + 
+  ggtitle("Trajectories vs variables") + 
+  ylab("uEMA constructs") + 
+  xlab("Wake period trajectory types") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 ```
+
+aggregate by group or trajectory
+```{r}
+
+aggregate(trajectory_dist$Freq, by=list(Category=trajectory_dist$Var1), FUN=sum)
+
+```
+
+add %days to trajectory_dist
+```{r}
+trajectory_dist$var_sum_days <- ave(trajectory_dist$Freq, trajectory_dist$var_name, FUN = sum)
+
+trajectory_dist$perc_days <- trajectory_dist$Freq/trajectory_dist$var_sum_days
+```
+
 
 get construct wise trajectory table
 ```{r}
