@@ -505,6 +505,46 @@ get_extreme_mapping_df <- function(df, uema_var, ema_var){
 ```
 
 
+get number of rows for extreme mapping effects of each construct
+
+```{r}
+var_dict <- list(c("uema_stress", "eod_stress"), c("uema_nervous", "eod_nerv"), c("uema_tense", "eod_ten"), c("uema_happy", "eod_happ"), c("uema_fatigue", "eod_fatig"), c("uema_relax", "eod_rel"), c("uema_sad", "eod_sad"), c("uema_focus", "eod_foc"), c("uema_control", "eod_resist"), c("uema_frust", "eod_frust"))
+
+```
+
+Run a loop for all variable pairs of interest for peak effects
+```{r}
+
+var_list <- c()
+count_list <- c()
+total_meas_list <- c()
+total_traj_list <- c()
+
+for (vars in var_dict){
+  # print(vars[[1]])
+  temp_df <- get_extreme_mapping_df(merged_df, vars[[1]], vars[[2]])
+  total_observation <- nrow(temp_df)
+  var_name <- strsplit(vars[[1]], 'uema_')[[1]][2]
+  # print(var_name)
+  # var_name <- vars[[1]]
+  var_search <- vars[[1]]
+  total_uema_count <- length(na.omit(merged_df[[var_search]]))
+  extreme_answers <- c("Consistent-high", "Consistent-low")
+  total_extreme_count <- length(merged_df[[var_search]][merged_df[[var_search]] %in% extreme_answers])
+  var_list <- c(var_list, var_name)
+  count_list <- c(count_list, total_observation)
+  total_meas_list <- c(total_meas_list, total_uema_count)
+  total_traj_list <- c(total_traj_list, total_extreme_count)
+}
+
+extreme_mapping_df <- data.frame(var_list, count_list, total_meas_list, total_traj_list)
+
+extreme_mapping_df$total_perc <- extreme_mapping_df$count_list/extreme_mapping_df$total_meas_list
+extreme_mapping_df$extreme_day_perc <- extreme_mapping_df$count_list/extreme_mapping_df$total_traj_list
+
+```
+
+
 ## get peak effects summary table
 ```{r}
 peak_effects_collection_df <- get_peak_effects_df(merged_df, "uema_stress", "eod_stress")
