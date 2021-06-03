@@ -223,6 +223,28 @@ ggplot(pid_trajectories_freq_df, aes(x = trajectory_type, y = var_name)) +
 
 ```
 
+Create function to get participant specific plots
+```{r}
+
+plot_pid_trajectories <- function(df, id){
+  df_subset <- subset(df, df$user_name == id)
+  # print(df_subset)
+  plot <- ggplot(df_subset, aes(x = trajectory_type, y = var_name)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') +
+    ggtitle(id) + 
+    ylab("uEMA constructs") + 
+    xlab("Wake period trajectory types") + 
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+  return(plot)
+}
+
+
+```
+
+Test plot with a p_id
+```{r}
+test_id = "sharpnessnextpouch@timestudy_com"
+plot_pid_trajectories(pid_trajectories_freq_df, test_id)
+```
 
 
 ## Keep only the common user names
