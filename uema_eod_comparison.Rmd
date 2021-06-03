@@ -447,7 +447,7 @@ get_pid_var_freq_plot <- function(df, uema_var, ema_var, pid){
 
 ```
 
-get rows satisfying a criteria
+get rows satisfying peak effects criteria
 ```{r}
 
 get_peak_effects_df <- function(df, uema_var, ema_var){
@@ -461,11 +461,11 @@ get_peak_effects_df <- function(df, uema_var, ema_var){
 get number of rows for peak effects of each construct
 
 ```{r}
-var_dict <- list(c("uema_stress", "eod_stress"), c("uema_nervous", "eod_nerv"), c("uema_tense", "eod_ten"), c("uema_happy", "eod_happ"), c("uema_fatigue", "eod_fatig"), c("uema_relax", "eod_rel"), c("uema_sad", "eod_sad"), c("uema_focus", "eod_foc"), c("uema_control", "eod_resist"))
+var_dict <- list(c("uema_stress", "eod_stress"), c("uema_nervous", "eod_nerv"), c("uema_tense", "eod_ten"), c("uema_happy", "eod_happ"), c("uema_fatigue", "eod_fatig"), c("uema_relax", "eod_rel"), c("uema_sad", "eod_sad"), c("uema_focus", "eod_foc"), c("uema_control", "eod_resist"), c("uema_frust", "eod_frust"))
 
 ```
 
-Run a loop
+Run a loop for all variable pairs of interest for peak effects
 ```{r}
 
 var_list <- c()
@@ -489,6 +489,18 @@ for (vars in var_dict){
 peak_effects_df <- data.frame(var_list, count_list, total_meas_list)
 
 peak_effects_df$perc <- peak_effects_df$count_list/peak_effects_df$total_meas_list
+
+```
+
+
+get rows satisfying extreme mapping. i.e., consistent-high --> extrememly or very much so and consistent-low --> not at all
+```{r}
+
+get_extreme_mapping_df <- function(df, uema_var, ema_var){
+  var_df <- df[, c("p_id", "wake_period", uema_var, ema_var)]
+  extreme_mapping_df <- subset(var_df, (var_df[[uema_var]] == "Consistent-high" & (var_df[[ema_var]] == "Extremely" | var_df[[ema_var]] == "Very much so")) | (var_df[[uema_var]] == "Consistent-low" & var_df[[ema_var]] == "Not at all"))
+  return(extreme_mapping_df)
+}
 
 ```
 
