@@ -138,7 +138,7 @@ get_pid_trajectory_freqs <- function(df){
   user_list <- unique(df$p_id)
   user_freq_df <- data.frame()
   for (user in user_list){
-    print(user)
+    # print(user)
     user_df <- subset(df, df$p_id == user)
     freq_df <- data.frame()
   col_names <- names(user_df)
@@ -146,7 +146,7 @@ get_pid_trajectory_freqs <- function(df){
   # col_to_remove <- c("sleep")
   # col_names <- col_names[!col_names %in% col_to_remove]
   for (col in col_names){
-    print(col)
+    # print(col)
     col_table <- table(user_df[[col]])
     # print(col_table)
     if (length(col_table) != 0){
@@ -201,11 +201,24 @@ pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Consi
 
 ```
 
+sort by p_index
+```{r}
+pid_trajectories_freq_df <- pid_trajectories_freq_df[order(pid_trajectories_freq_df$user_name), ]
+```
+
 
 plot grouped by participant
 ```{r}
 
-ggplot(pid_trajectories_freq_df, aes(x = trajectory_type, y = var_name)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + ggtitle("Trajectories vs variables") + ylab("uEMA constructs") + xlab("Wake period trajectory types") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) + facet_wrap(~p_index, nrow = 3)
+ggplot(pid_trajectories_freq_df, aes(x = trajectory_type, y = var_name)) + 
+  geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + 
+  ggtitle("Trajectories vs variables") + 
+  ylab("uEMA constructs") + 
+  xlab("Wake period trajectory types") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+  facet_wrap(~p_index, nrow = 3) + 
+  theme(strip.text.x = element_text(size = 6, colour = "black", margin = margin(2,0,2,0, "mm"))) + 
+  theme(axis.text.x = element_text(size=6, hjust=1), axis.text.y = element_text(size = 6, hjust = 1))
 
 
 ```
