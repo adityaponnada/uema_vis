@@ -119,10 +119,30 @@ trajectory_summary_df <- aggregate(trajectory_dist$Freq,
 Plot by variable --> heat map
 ```{r}
 
-ggplot(trajectory_dist, aes(x = Var1, y = var_name)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + ggtitle("Trajectories vs variables") + ylab("uEMA constructs") + xlab("Wake period trajectory types") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-panel.background = element_blank(), axis.line = element_line(colour = "black"))
+traj_plot <- ggplot(trajectory_dist, aes(x = Var1, y = var_name)) + 
+  geom_tile(aes(fill = Freq)) + 
+  scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + 
+  ggtitle("Trajectories vs variables") + 
+  ylab("uEMA constructs") + 
+  xlab("Wake period trajectory types") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 ```
+
+aggregate by group or trajectory
+```{r}
+
+aggregate(trajectory_dist$Freq, by=list(Category=trajectory_dist$Var1), FUN=sum)
+
+```
+
+add %days to trajectory_dist
+```{r}
+trajectory_dist$var_sum_days <- ave(trajectory_dist$Freq, trajectory_dist$var_name, FUN = sum)
+
+trajectory_dist$perc_days <- trajectory_dist$Freq/trajectory_dist$var_sum_days
+```
+
 
 get construct wise trajectory table
 ```{r}
@@ -138,7 +158,7 @@ get_pid_trajectory_freqs <- function(df){
   user_list <- unique(df$p_id)
   user_freq_df <- data.frame()
   for (user in user_list){
-    print(user)
+    # print(user)
     user_df <- subset(df, df$p_id == user)
     freq_df <- data.frame()
   col_names <- names(user_df)
@@ -146,7 +166,7 @@ get_pid_trajectory_freqs <- function(df){
   # col_to_remove <- c("sleep")
   # col_names <- col_names[!col_names %in% col_to_remove]
   for (col in col_names){
-    print(col)
+    # print(col)
     col_table <- table(user_df[[col]])
     # print(col_table)
     if (length(col_table) != 0){
@@ -168,9 +188,25 @@ get_pid_trajectory_freqs <- function(df){
 
 ```
 
+Create a uema_df with only 100 TIME days and above
+```{r}
+
+uema_df$n <- 1
+
+uema_df$p_id_days <- ave(uema_df$n, uema_df$p_id, FUN = sum)
+
+uema_100_df <- subset(uema_df, uema_df$p_id_days >= 100)
+
+uema_100_df <- uema_100_df[, !names(uema_100_df) %in% c("n", "p_id_days")]
+
+uema_df <- uema_df[, !names(uema_df) %in% c("n", "p_id_days")]
+
+```
+
+
 Get the dataframe for the uema_df
 ```{r}
-pid_trajectories_freq_df <- get_pid_trajectory_freqs(uema_df)
+pid_trajectories_freq_df <- get_pid_trajectory_freqs(uema_100_df)
 ```
 
 
@@ -201,15 +237,50 @@ pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Consi
 
 ```
 
+sort by p_index
+```{r}
+pid_trajectories_freq_df <- pid_trajectories_freq_df[order(pid_trajectories_freq_df$user_name), ]
+```
+
 
 plot grouped by participant
 ```{r}
 
-ggplot(pid_trajectories_freq_df, aes(x = trajectory_type, y = var_name)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + ggtitle("Trajectories vs variables") + ylab("uEMA constructs") + xlab("Wake period trajectory types") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) + facet_wrap(~p_index, nrow = 3)
+pid_traj_plot <- ggplot(pid_trajectories_freq_df, aes(x = trajectory_type, y = var_name)) + 
+  geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + 
+  ggtitle("Trajectories vs variables") + 
+  ylab("uEMA constructs") + 
+  xlab("Wake period trajectory types") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+  facet_wrap(~p_index, nrow = 5) + 
+  theme(strip.text.x = element_text(size = 6, colour = "black", margin = margin(2,0,2,0, "mm"))) + 
+  theme(axis.text.x = element_text(size=6, hjust=1), axis.text.y = element_text(size = 6, hjust = 1))
 
 
 ```
 
+Create function to get participant specific plots
+```{r}
+
+plot_pid_trajectories <- function(df, id){
+  df_subset <- subset(df, df$user_name == id)
+  # print(df_subset)
+  plot <- ggplot(df_subset, aes(x = trajectory_type, y = var_name)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') +
+    ggtitle(id) + 
+    ylab("uEMA constructs") + 
+    xlab("Wake period trajectory types") + 
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+  return(plot)
+}
+
+
+```
+
+Test plot with a p_id
+```{r}
+test_id = "sharpnessnextpouch@timestudy_com"
+plot_pid_trajectories(pid_trajectories_freq_df, test_id)
+```
 
 
 ## Keep only the common user names
