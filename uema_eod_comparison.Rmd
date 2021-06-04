@@ -544,6 +544,55 @@ extreme_mapping_df$extreme_day_perc <- extreme_mapping_df$count_list/extreme_map
 
 ```
 
+Function to create long format extreme/peak effects df
+```{r}
+get_long_format_var_df <- function(df, uema_var, ema_var, effect_type){
+  var_subset_df <- df[, c("p_id", "wake_period", uema_var, ema_var)]
+  if (effect_type == "extreme_mapping"){
+    var_subset_df <- subset(var_subset_df, var_subset_df[[uema_var]] == "Consistent-high" | var_subset_df[[uema_var]] == "Consistent-low")
+  } else if (effect_type == "peak_effects"){
+    var_subset_df <- subset(var_subset_df, var_subset_df[[uema_var]] == "Accumulation" | var_subset_df[[uema_var]] == "Fluctuating" | var_subset_df[[uema_var]] == "Dissipation")
+  }
+  
+  var_subset_df$comparison_vars <- paste0(uema_var, "--", ema_var)
+  names(var_subset_df) <- c("p_id", "wake_period", "uema", "eod", "comparison_vars")
+  
+  return(var_subset_df)
+}
+
+```
+
+
+Get the long form var df for all the variables of interest
+```{r}
+
+var_long_form_df <- data.frame()
+
+mapping_type <- "extreme_mapping"
+
+for (vars in var_dict){
+  uema_variable <- vars[[1]]
+  eod_variable <- vars[[2]]
+  
+  var_df <- get_long_format_var_df(merged_df, uema_variable, eod_variable, mapping_type)
+  var_long_form_df <- rbind(var_long_form_df, var_df)
+}
+
+```
+
+
+Get the df for each variable with consistent high and low vals for the var and corresponding eod vals
+```{r}
+
+
+for (vars in var_dict){
+  var_df <- get_extreme_mapping_df(merged_df, vars[[1]], var[[2]])
+}
+
+
+```
+
+
 
 ## get peak effects summary table
 ```{r}
