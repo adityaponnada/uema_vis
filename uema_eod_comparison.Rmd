@@ -544,6 +544,41 @@ extreme_mapping_df$extreme_day_perc <- extreme_mapping_df$count_list/extreme_map
 
 ```
 
+
+get peak effects for all the constructs
+```{r}
+
+
+var_list <- c()
+count_list <- c()
+total_meas_list <- c()
+total_traj_list <- c()
+
+for (vars in var_dict){
+  # print(vars[[1]])
+  temp_df <- get_peak_effects_df(merged_df, vars[[1]], vars[[2]])
+  total_observation <- nrow(temp_df)
+  var_name <- strsplit(vars[[1]], 'uema_')[[1]][2]
+  # print(var_name)
+  # var_name <- vars[[1]]
+  var_search <- vars[[1]]
+  total_uema_count <- length(na.omit(merged_df[[var_search]]))
+  varying_answers <- c("Accumulation", "Fluctuating", "Dissipation")
+  total_extreme_count <- length(merged_df[[var_search]][merged_df[[var_search]] %in% varying_answers])
+  var_list <- c(var_list, var_name)
+  count_list <- c(count_list, total_observation)
+  total_meas_list <- c(total_meas_list, total_uema_count)
+  total_traj_list <- c(total_traj_list, total_extreme_count)
+}
+
+peak_effects_df <- data.frame(var_list, count_list, total_meas_list, total_traj_list)
+
+peak_effects_df$total_perc <- peak_effects_df$count_list/peak_effects_df$total_meas_list
+peak_effects_df$peak_day_percs <- peak_effects_df$count_list/peak_effects_df$total_traj_list
+
+```
+
+
 Function to create long format extreme/peak effects df
 ```{r}
 get_long_format_var_df <- function(df, uema_var, ema_var, effect_type){
@@ -568,7 +603,7 @@ Get the long form var df for all the variables of interest
 
 var_long_form_df <- data.frame()
 
-mapping_type <- "extreme_mapping"
+mapping_type <- "peak_effects"
 
 for (vars in var_dict){
   uema_variable <- vars[[1]]
@@ -581,17 +616,55 @@ for (vars in var_dict){
 ```
 
 
-Get the df for each variable with consistent high and low vals for the var and corresponding eod vals
+Get some summary stats for the extreme mapping file
+
 ```{r}
 
-
-for (vars in var_dict){
-  var_df <- get_extreme_mapping_df(merged_df, vars[[1]], var[[2]])
-}
-
+table(var_long_form_df$uema, var_long_form_df$eod)
 
 ```
 
+Get construct wise distribution
+
+```{r}
+# table(var_long_form_df$uema, var_long_form_df$eod, var_long_form_df$comparison_vars)
+
+get_var_long_plot <- function(df){
+  count_df <- dplyr::count_(df, vars = c("comparison_vars", "uema", "eod"))
+  print(head(count_df))
+  g_plot <- ggplot(count_df, aes(x = uema, y = eod)) + 
+    geom_tile(aes(fill = n)) + 
+    scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + 
+    theme(axis.title.y = element_blank()) + 
+    theme(strip.text.x = element_text(size = 6, colour = "black", margin = margin(2,0,2,0, "mm"))) + 
+    theme(axis.text.x = element_text(size=6, hjust=1), axis.text.y = element_text(size = 6, hjust = 1)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(plot.title = element_text(size=10)) +
+    facet_wrap(~comparison_vars, nrow = 5)
+  return(g_plot)
+}
+
+```
+
+Get participant wise distribution
+```{r}
+
+get_var_pid_long_plot <- function(df){
+  count_df <- dplyr::count_(df, vars = c("p_id", "uema", "eod"))
+  print(head(count_df))
+  g_plot <- ggplot(count_df, aes(x = uema, y = eod)) + 
+    geom_tile(aes(fill = n)) + 
+    scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + 
+    theme(axis.title.y = element_blank()) + 
+    theme(strip.text.x = element_text(size = 6, colour = "black", margin = margin(2,0,2,0, "mm"))) + 
+    theme(axis.text.x = element_text(size=6, hjust=1), axis.text.y = element_text(size = 6, hjust = 1)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(plot.title = element_text(size=10)) +
+    facet_wrap(~p_id, nrow = 5)
+  return(g_plot)
+}
+
+```
 
 
 ## get peak effects summary table
