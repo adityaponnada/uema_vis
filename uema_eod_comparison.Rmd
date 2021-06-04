@@ -447,7 +447,7 @@ get_pid_var_freq_plot <- function(df, uema_var, ema_var, pid){
 
 ```
 
-get rows satisfying a criteria
+get rows satisfying peak effects criteria
 ```{r}
 
 get_peak_effects_df <- function(df, uema_var, ema_var){
@@ -461,11 +461,11 @@ get_peak_effects_df <- function(df, uema_var, ema_var){
 get number of rows for peak effects of each construct
 
 ```{r}
-var_dict <- list(c("uema_stress", "eod_stress"), c("uema_nervous", "eod_nerv"), c("uema_tense", "eod_ten"), c("uema_happy", "eod_happ"), c("uema_fatigue", "eod_fatig"), c("uema_relax", "eod_rel"), c("uema_sad", "eod_sad"), c("uema_focus", "eod_foc"), c("uema_control", "eod_resist"))
+var_dict <- list(c("uema_stress", "eod_stress"), c("uema_nervous", "eod_nerv"), c("uema_tense", "eod_ten"), c("uema_happy", "eod_happ"), c("uema_fatigue", "eod_fatig"), c("uema_relax", "eod_rel"), c("uema_sad", "eod_sad"), c("uema_focus", "eod_foc"), c("uema_control", "eod_resist"), c("uema_frust", "eod_frust"))
 
 ```
 
-Run a loop
+Run a loop for all variable pairs of interest for peak effects
 ```{r}
 
 var_list <- c()
@@ -489,6 +489,180 @@ for (vars in var_dict){
 peak_effects_df <- data.frame(var_list, count_list, total_meas_list)
 
 peak_effects_df$perc <- peak_effects_df$count_list/peak_effects_df$total_meas_list
+
+```
+
+
+get rows satisfying extreme mapping. i.e., consistent-high --> extrememly or very much so and consistent-low --> not at all
+```{r}
+
+get_extreme_mapping_df <- function(df, uema_var, ema_var){
+  var_df <- df[, c("p_id", "wake_period", uema_var, ema_var)]
+  extreme_mapping_df <- subset(var_df, (var_df[[uema_var]] == "Consistent-high" & (var_df[[ema_var]] == "Extremely" | var_df[[ema_var]] == "Very much so")) | (var_df[[uema_var]] == "Consistent-low" & var_df[[ema_var]] == "Not at all"))
+  return(extreme_mapping_df)
+}
+
+```
+
+
+get number of rows for extreme mapping effects of each construct
+
+```{r}
+var_dict <- list(c("uema_stress", "eod_stress"), c("uema_nervous", "eod_nerv"), c("uema_tense", "eod_ten"), c("uema_happy", "eod_happ"), c("uema_fatigue", "eod_fatig"), c("uema_relax", "eod_rel"), c("uema_sad", "eod_sad"), c("uema_focus", "eod_foc"), c("uema_control", "eod_resist"), c("uema_frust", "eod_frust"))
+
+```
+
+Run a loop for all variable pairs of interest for peak effects
+```{r}
+
+var_list <- c()
+count_list <- c()
+total_meas_list <- c()
+total_traj_list <- c()
+
+for (vars in var_dict){
+  # print(vars[[1]])
+  temp_df <- get_extreme_mapping_df(merged_df, vars[[1]], vars[[2]])
+  total_observation <- nrow(temp_df)
+  var_name <- strsplit(vars[[1]], 'uema_')[[1]][2]
+  # print(var_name)
+  # var_name <- vars[[1]]
+  var_search <- vars[[1]]
+  total_uema_count <- length(na.omit(merged_df[[var_search]]))
+  extreme_answers <- c("Consistent-high", "Consistent-low")
+  total_extreme_count <- length(merged_df[[var_search]][merged_df[[var_search]] %in% extreme_answers])
+  var_list <- c(var_list, var_name)
+  count_list <- c(count_list, total_observation)
+  total_meas_list <- c(total_meas_list, total_uema_count)
+  total_traj_list <- c(total_traj_list, total_extreme_count)
+}
+
+extreme_mapping_df <- data.frame(var_list, count_list, total_meas_list, total_traj_list)
+
+extreme_mapping_df$total_perc <- extreme_mapping_df$count_list/extreme_mapping_df$total_meas_list
+extreme_mapping_df$extreme_day_perc <- extreme_mapping_df$count_list/extreme_mapping_df$total_traj_list
+
+```
+
+
+get peak effects for all the constructs
+```{r}
+
+
+var_list <- c()
+count_list <- c()
+total_meas_list <- c()
+total_traj_list <- c()
+
+for (vars in var_dict){
+  # print(vars[[1]])
+  temp_df <- get_peak_effects_df(merged_df, vars[[1]], vars[[2]])
+  total_observation <- nrow(temp_df)
+  var_name <- strsplit(vars[[1]], 'uema_')[[1]][2]
+  # print(var_name)
+  # var_name <- vars[[1]]
+  var_search <- vars[[1]]
+  total_uema_count <- length(na.omit(merged_df[[var_search]]))
+  varying_answers <- c("Accumulation", "Fluctuating", "Dissipation")
+  total_extreme_count <- length(merged_df[[var_search]][merged_df[[var_search]] %in% varying_answers])
+  var_list <- c(var_list, var_name)
+  count_list <- c(count_list, total_observation)
+  total_meas_list <- c(total_meas_list, total_uema_count)
+  total_traj_list <- c(total_traj_list, total_extreme_count)
+}
+
+peak_effects_df <- data.frame(var_list, count_list, total_meas_list, total_traj_list)
+
+peak_effects_df$total_perc <- peak_effects_df$count_list/peak_effects_df$total_meas_list
+peak_effects_df$peak_day_percs <- peak_effects_df$count_list/peak_effects_df$total_traj_list
+
+```
+
+
+Function to create long format extreme/peak effects df
+```{r}
+get_long_format_var_df <- function(df, uema_var, ema_var, effect_type){
+  var_subset_df <- df[, c("p_id", "wake_period", uema_var, ema_var)]
+  if (effect_type == "extreme_mapping"){
+    var_subset_df <- subset(var_subset_df, var_subset_df[[uema_var]] == "Consistent-high" | var_subset_df[[uema_var]] == "Consistent-low")
+  } else if (effect_type == "peak_effects"){
+    var_subset_df <- subset(var_subset_df, var_subset_df[[uema_var]] == "Accumulation" | var_subset_df[[uema_var]] == "Fluctuating" | var_subset_df[[uema_var]] == "Dissipation")
+  }
+  
+  var_subset_df$comparison_vars <- paste0(uema_var, "--", ema_var)
+  names(var_subset_df) <- c("p_id", "wake_period", "uema", "eod", "comparison_vars")
+  
+  return(var_subset_df)
+}
+
+```
+
+
+Get the long form var df for all the variables of interest
+```{r}
+
+var_long_form_df <- data.frame()
+
+mapping_type <- "peak_effects"
+
+for (vars in var_dict){
+  uema_variable <- vars[[1]]
+  eod_variable <- vars[[2]]
+  
+  var_df <- get_long_format_var_df(merged_df, uema_variable, eod_variable, mapping_type)
+  var_long_form_df <- rbind(var_long_form_df, var_df)
+}
+
+```
+
+
+Get some summary stats for the extreme mapping file
+
+```{r}
+
+table(var_long_form_df$uema, var_long_form_df$eod)
+
+```
+
+Get construct wise distribution
+
+```{r}
+# table(var_long_form_df$uema, var_long_form_df$eod, var_long_form_df$comparison_vars)
+
+get_var_long_plot <- function(df){
+  count_df <- dplyr::count_(df, vars = c("comparison_vars", "uema", "eod"))
+  print(head(count_df))
+  g_plot <- ggplot(count_df, aes(x = uema, y = eod)) + 
+    geom_tile(aes(fill = n)) + 
+    scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + 
+    theme(axis.title.y = element_blank()) + 
+    theme(strip.text.x = element_text(size = 6, colour = "black", margin = margin(2,0,2,0, "mm"))) + 
+    theme(axis.text.x = element_text(size=6, hjust=1), axis.text.y = element_text(size = 6, hjust = 1)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(plot.title = element_text(size=10)) +
+    facet_wrap(~comparison_vars, nrow = 5)
+  return(g_plot)
+}
+
+```
+
+Get participant wise distribution
+```{r}
+
+get_var_pid_long_plot <- function(df){
+  count_df <- dplyr::count_(df, vars = c("p_id", "uema", "eod"))
+  print(head(count_df))
+  g_plot <- ggplot(count_df, aes(x = uema, y = eod)) + 
+    geom_tile(aes(fill = n)) + 
+    scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + 
+    theme(axis.title.y = element_blank()) + 
+    theme(strip.text.x = element_text(size = 6, colour = "black", margin = margin(2,0,2,0, "mm"))) + 
+    theme(axis.text.x = element_text(size=6, hjust=1), axis.text.y = element_text(size = 6, hjust = 1)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(plot.title = element_text(size=10)) +
+    facet_wrap(~p_id, nrow = 5)
+  return(g_plot)
+}
 
 ```
 
