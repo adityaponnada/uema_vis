@@ -314,6 +314,28 @@ for (username in p_id_list){
 
 ```
 
+Create a test function to only get the wake period attached to prompt responses for all the users
+```{r}
+
+eod_wp_export_df <- data.frame()
+
+for (username in p_id_list){
+  username <- paste0(username, "@timestudy_com")
+  
+  temp_pid_df <- prepare_pid_subset(time_daily_long_df, combined_report_df, username)
+  eod_wp_export_df <- rbind(eod_wp_export_df, temp_pid_df)
+  
+}
+
+```
+
+
+## Write the combined file to csv
+```{r}
+write.csv(eod_wp_export_df, file = "D:/uema_exploratory_plots/trajectory_plots/eod_wp_export.csv", row.names = FALSE, quote = FALSE, sep = ",")
+```
+
+
 ## write the file to csv
 ```{r}
 
