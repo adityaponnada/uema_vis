@@ -305,7 +305,7 @@ p_id_list <- unique(time_daily_long_df$Participant_ID)
 
 for (username in p_id_list){
   username <- paste0(username, '@timestudy_com')
-  print(username)
+  # print(username)
   temp_pid_df <- get_wakeperiod_EOD_df(time_daily_long_df, combined_report_df, username)
   # head(temp_pid_df)
   combined_df <- rbind(combined_df, temp_pid_df)

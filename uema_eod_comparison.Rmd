@@ -344,14 +344,6 @@ merged_df <-merge(uema_df,eod_df,by=c("p_id","wake_period"))
 
 ```
 
-
-## test code to get frequency matrix plot between two columns
-```{r}
-
-ggplot(merged_df, aes(uema_nervous, ..count..)) + geom_bar(aes(fill = eod_nerv), position = "dodge")
-
-```
-
 Print table
 ```{r}
 table(merged_df$uema_nervous, merged_df$eod_nerv)
@@ -419,12 +411,6 @@ for (vars in var_dict){
 
 ```
 
-Plot the grid
-```{r}
-
-wrap_plots(plist)
-
-```
 
 
 get the ema uema pair frequency plot for the selected participant
@@ -597,6 +583,37 @@ get_long_format_var_df <- function(df, uema_var, ema_var, effect_type){
 
 ```
 
+Function for reshaping the merged data frame for all the cases
+```{r}
+
+get_merged_long_df <- function(df, uema_var, ema_var){
+  var_subset_df <- df[, c("p_id", "wake_period", uema_var, ema_var)]
+  var_subset_df$uema_type <- uema_var
+  var_subset_df$eod_type <- ema_var
+  names(var_subset_df) <- c("p_id", "wake_period", "uema", "eod", "uema_type", "eod_type")
+  return(var_subset_df)
+}
+
+```
+
+Collapse all variables into one
+```{r}
+
+merged_long_df <- data.frame()
+
+for (vars in var_dict){
+  uema_var <- vars[[1]]
+  eod_var <- vars[[2]]
+  
+  temp_df <- get_merged_long_df(merged_df, uema_var = uema_var, ema_var = eod_var)
+  merged_long_df <- rbind(merged_long_df, temp_df)
+}
+
+write.csv(merged_long_df, file = "D:/uema_exploratory_plots/trajectory_plots/merged_long_df.csv", sep = ",", row.names = FALSE, quote = FALSE)
+
+
+```
+
 
 Get the long form var df for all the variables of interest
 ```{r}
@@ -674,6 +691,9 @@ peak_effects_collection_df <- get_peak_effects_df(merged_df, "uema_stress", "eod
 table(peak_effects_collection_df$uema_stress, peak_effects_collection_df$eod_stress)
 
 ```
+
+
+# RMCORR TEST -- to be visited later -----
 
 ## Convert to scores
 ```{r}
