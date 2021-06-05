@@ -222,6 +222,26 @@ prepare_pid_subset <- function(df, report_df, p_id) {
 ```
 
 
+Add a test function to get the wake period along with prompt response file for all participants
+```{r}
+
+plist <- unique(combined_uema_file$Participant_ID)
+
+uema_wp_df <- data.frame()
+
+for (pid in plist){
+  p_temp_df <- prepare_pid_subset(combined_uema_file, combined_report_df, pid)
+  uema_wp_df <- rbind(uema_wp_df, p_temp_df)
+}
+
+```
+
+write the dataframe to a csv file
+```{r}
+write.csv(uema_wp_df, file="D:/uema_exploratory_plots/trajectory_plots/uema_wp_export.csv", row.names = FALSE, quote = FALSE, sep = ",")
+```
+
+
 
 ## Create a slope type function
 ```{r}
