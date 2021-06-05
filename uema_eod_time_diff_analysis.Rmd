@@ -16,9 +16,9 @@ library(reshape2)
 ## Read the uEMA combined responses + wake period mapped file
 ```{r}
 
-uema_responses_path = "D:/new_data_pre_processed/uema_trajectories_combined.csv"
+uema_responses_path = "D:/uema_exploratory_plots/trajectory_plots/uema_wp_export.csv"
 
-uema_wp_df <- read.csv(file=uema_responses_path, sep = ",", header = TRUE)
+uema_wp_df <- read.csv(file=uema_responses_path, sep = ",", header = TRUE, row.names = NULL)
 
 
 ```
@@ -26,9 +26,9 @@ uema_wp_df <- read.csv(file=uema_responses_path, sep = ",", header = TRUE)
 ## Read the EOD file combined responses + wake period mapped
 ```{r}
 
-eod_path <- "D:/new_data_pre_processed/eod_trajectories_combined.csv"
+eod_path <- "D:/uema_exploratory_plots/trajectory_plots/eod_wp_export.csv"
 
-eod_df <- read.csv(file=eod_path, sep = ",", header = TRUE)
+eod_df <- read.csv(file=eod_path, sep = ",", header = TRUE, row.names = NULL)
 
 
 ```
