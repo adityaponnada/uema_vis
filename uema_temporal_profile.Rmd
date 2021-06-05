@@ -181,23 +181,23 @@ First for the uEMA combined file
 ## add a waking period column to each response row
 ```{r}
 
-for(i in 1:nrow(report_pid_df)){
-  # print(paste0(i, " _ ", report_pid_df$current_wake_time[i]))
-  subset_pid_df$wake_period[subset_pid_df$date_timestamp >= report_pid_df$current_wake_time[i] & subset_pid_df$date_timestamp <= report_pid_df$current_sleep_time[i]] <- paste0("Wake_period_", i)
-}
+# for(i in 1:nrow(report_pid_df)){
+#   # print(paste0(i, " _ ", report_pid_df$current_wake_time[i]))
+#   subset_pid_df$wake_period[subset_pid_df$date_timestamp >= report_pid_df$current_wake_time[i] & subset_pid_df$date_timestamp <= report_pid_df$current_sleep_time[i]] <- paste0("Wake_period_", i)
+# }
 
 ```
 
 ## Remove CS microEMA
 ```{r}
-subset_pid_df <- subset(subset_pid_df, subset_pid_df$Q_ID != "activity")
+# subset_pid_df <- subset(subset_pid_df, subset_pid_df$Q_ID != "activity")
 ```
 
 
 ## Get a list of relevant construct/variable names
 ```{r}
-var_list <- unique(subset_pid_df$Q_ID)
-wake_period_list <- unique(subset_pid_df$wake_period)
+# var_list <- unique(subset_pid_df$Q_ID)
+# wake_period_list <- unique(subset_pid_df$wake_period)
 
 ```
 
