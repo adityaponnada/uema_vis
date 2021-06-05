@@ -138,6 +138,11 @@ time_daily_long_df$Q_ID <- gsub('[Q]{1}\\d{1,2}_', '', time_daily_long_df$Q_D)
 
 ```
 
+Convert the question text to quotes
+```{r}
+time_daily_long_df$Q_TEXT <- paste0("'", time_daily_long_df$Q_TEXT, "'")
+```
+
 
 ## Read the daily report file
 ```{r}
@@ -326,6 +331,13 @@ for (username in p_id_list){
   eod_wp_export_df <- rbind(eod_wp_export_df, temp_pid_df)
   
 }
+
+```
+
+Remove the comma from question text
+```{r}
+
+eod_wp_export_df$Q_TEXT <- as.character(gsub(",", "", eod_wp_export_df$Q_TEXT))
 
 ```
 

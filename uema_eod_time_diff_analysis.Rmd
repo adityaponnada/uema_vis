@@ -18,7 +18,7 @@ library(reshape2)
 
 uema_responses_path = "D:/uema_exploratory_plots/trajectory_plots/uema_wp_export.csv"
 
-uema_wp_df <- read.csv(file=uema_responses_path, sep = ",", header = TRUE, row.names = NULL)
+uema_wp_df <- read.csv(file=uema_responses_path, sep = ",", header = TRUE)
 
 
 ```
