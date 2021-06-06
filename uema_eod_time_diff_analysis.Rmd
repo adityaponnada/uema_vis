@@ -42,3 +42,51 @@ long_merged_df <- read.csv(file=long_merged_path, sep = ",", header = TRUE)
 
 ```
 
+## Remove unkwon users
+```{r}
+
+eod_df <- subset(eod_df,eod_df$Participant_ID != "unknown_user")
+
+uema_wp_df <- subset(uema_wp_df, uema_wp_df$Participant_ID != "unknown_user")
+
+```
+
+## Remove unwanted wake periods from the eod file
+```{r}
+
+wp_list <- unique(uema_wp_df$wake_period)
+
+eod_df <- subset(eod_df, eod_df$wake_period %in% wp_list)
+
+```
+
+
+## Remove uncommon users
+```{r}
+
+uema_user_list <- unique(uema_wp_df$Participant_ID)
+
+eod_df$P_ID <- paste0(eod_df$Participant_ID,  "@timestudy_com")
+
+eod_df <- subset(eod_df, eod_df$P_ID %in% uema_user_list)
+
+```
+
+## Keep only relevant Q_IDs
+```{r}
+
+uema_qids <- c("control", "focus", "frust", "sad", "stress", "happy", "tense", "fatigue", "nervous", "relax")
+
+uema_wp_df <- subset(uema_wp_df, uema_wp_df$Q_ID %in% uema_qids)
+
+```
+
+For EOD
+```{r}
+
+eod_qiods <- c("SAD", "HAPP", "FATIG", "REL", "TEN", "STRESS", "FRUST", "NERV", "RESIST", "FOC")
+
+eod_df <- subset(eod_df, eod_df$Q_ID %in% eod_qiods)
+
+```
+
