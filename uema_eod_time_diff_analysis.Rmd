@@ -11,6 +11,7 @@ library(ggplot2)
 library(plyr)
 library(dplyr)
 library(reshape2)
+library(purrr)
 ```
 
 ## Read the uEMA combined responses + wake period mapped file
@@ -103,5 +104,50 @@ for EOD
 eod_df$date_timestamp <- as.POSIXct(eod_df$Initial_Prompt_Local_Time, format="%Y-%m-%d %H:%M:%OS")
 
 ```
+
+## Filter out the last uema prompt for each construct --  before EOD
+
+```{r}
+
+eod_df$p_id_wp <- paste0(eod_df$P_ID, "_", eod_df$wake_period)
+uema_wp_df$p_id_wp <- paste0(uema_wp_df$Participant_ID, "_", uema_wp_df$wake_period)
+
+
+```
+
+Keep only the prompt time column and pid_wakeperiod column for each
+```{r}
+
+eod_df <- subset(eod_df, !is.na(eod_df$wake_period))
+
+eod_wp_df <- eod_df[, c("p_id_wp", "date_timestamp")]
+
+eod_wp_df <- unique(eod_wp_df)
+
+```
+
+Merge with uema_df
+```{r}
+
+uema_ts_wp_df <- uema_wp_df
+
+joined_uema_eod_df <- merge(uema_ts_wp_df, eod_wp_df, by = "p_id_wp", all.x = FALSE, all.y = FALSE)
+
+list_pid_wps <- unique(eod_wp_df$p_id_wp)
+
+
+```
+
+Loop through the eod_wp_df
+```{r}
+
+for (pid_wp in list_pid_wps){
+  uema_ts_wp_df$eod_time[uema_ts_wp_df$p_id_wp == pid_wp] <- as.character(eod_wp_df$date_timestamp[eod_wp_df$p_id_wp == pid_wp])
+}
+
+uema_ts_wp_df$eod_time <- as.POSIXct(uema_ts_wp_df$eod_time, format = "%Y-%m-%d %H:%M:%OS")
+
+```
+
 
 
