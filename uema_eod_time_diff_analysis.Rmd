@@ -149,5 +149,94 @@ uema_ts_wp_df$eod_time <- as.POSIXct(uema_ts_wp_df$eod_time, format = "%Y-%m-%d 
 
 ```
 
+Part - 1: Get the items asked before the EOD time
+```{r}
 
+uema_eod_time_v1_df <- uema_ts_wp_df
+
+uema_eod_time_v1_df$time_dff <- round(as.numeric(difftime(uema_eod_time_v1_df$eod_time, uema_eod_time_v1_df$date_timestamp, units = "hours")), digits = 4)
+
+```
+
+Remove prompts after eod
+```{r}
+
+uema_eod_time_v1_df <- subset(uema_eod_time_v1_df, uema_eod_time_v1_df$time_dff >= 0)
+
+
+```
+
+
+Filter out the last occurrences
+```{r}
+
+pid_wp_list <- unique(uema_eod_time_v1_df$p_id_wp)
+var_list <- unique(uema_eod_time_v1_df$Q_ID)
+# var_list <- c("stress")
+
+uema_eod_difftime_df <- data.frame()
+
+for (pid_wp in pid_wp_list){
+  # print(pid_wp)
+  
+  pid_temp_df <- subset(uema_eod_time_v1_df, uema_eod_time_v1_df$p_id_wp == pid_wp)
+  
+  for (uema_var in var_list){
+    pid_wp_var_df <- subset(pid_temp_df, pid_temp_df$Q_ID == uema_var)
+    nrow_var <- nrow(pid_wp_var_df)
+    if (nrow_var >= 3){
+    # print(nrow_var)
+    # print(head(pid_wp_var_df$time_dff))
+    # time_diff_list <- pid_wp_var_df$time_dff
+    # min_time <- round(min(time_diff_list), 2)
+    # print(paste0("min time: ", min_time))
+    # pid_wp_var_df <- subset(pid_wp_var_df, pid_wp_var_df$time_diff == min_time)
+    pid_wp_var_df <- pid_wp_var_df[pid_wp_var_df$time_dff == min(pid_wp_var_df$time_dff), ]
+    # print(nrow(pid_wp_var_df))
+    uema_eod_difftime_df <- rbind(uema_eod_difftime_df, pid_wp_var_df)  
+    }
+    
+  }
+  
+  
+}
+
+
+```
+
+## Remove an unwanted username
+```{r}
+
+uema_eod_difftime_df <- subset(uema_eod_difftime_df, uema_eod_difftime_df$Participant_ID != "uniformlyharmfulbush@timestudy_com")
+
+
+```
+
+## Create an identifer column in long merged file
+```{r}
+
+long_merged_df$pid_wp <- paste0(long_merged_df$p_id, "_", long_merged_df$wake_period)
+
+long_merged_df <- subset(long_merged_df, !is.na(long_merged_df$uema))
+
+long_merged_df <- subset(long_merged_df, long_merged_df$p_id != "uniformlyharmfulbush@timestudy_com")
+
+long_merged_df$uema_id <- gsub("uema_","",as.character(long_merged_df$uema_type))
+
+long_merged_df$pid_wp_qid <- paste0(long_merged_df$pid_wp, "_", long_merged_df$uema_id)
+
+
+```
+
+## Attach the time diff to long_merged_df
+```{r}
+
+uema_eod_difftime_df$pid_wp_qid <- paste0(uema_eod_difftime_df$p_id_wp, "_", uema_eod_difftime_df$Q_ID)
+
+pid_wp_qid_df <- uema_eod_difftime_df[, c("pid_wp_qid", "time_dff")]
+
+merged_timediff <- merge(long_merged_df, pid_wp_qid_df, by.x = "pid_wp_qid", by.y = "pid_wp_qid", all.x = TRUE, all.y = FALSE)
+
+
+```
 
