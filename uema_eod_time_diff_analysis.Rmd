@@ -90,3 +90,18 @@ eod_df <- subset(eod_df, eod_df$Q_ID %in% eod_qiods)
 
 ```
 
+Convert prompt time to date time objects
+```{r}
+
+uema_wp_df$date_timestamp <- as.POSIXct(uema_wp_df$date_timestamp, format = "%Y-%m-%d %H:%M:%OS")
+
+```
+
+for EOD
+```{r}
+
+eod_df$date_timestamp <- as.POSIXct(eod_df$Initial_Prompt_Local_Time, format="%Y-%m-%d %H:%M:%OS")
+
+```
+
+
