@@ -175,9 +175,9 @@ Moderately, a little --> 2 (sort of)
 Not at all --> No --> 1
 ```{r}
 
-time_daily_long_df$Answer_scrore[time_daily_long_df$ANS_TEXT == "Extremely" | time_daily_long_df$ANS_TEXT == "Quite a bit" | time_daily_long_df$ANS_TEXT == "Very much so"] <- 3
-time_daily_long_df$Answer_scrore[time_daily_long_df$ANS_TEXT == "Moderately" | time_daily_long_df$ANS_TEXT == "A little"] <- 2
-time_daily_long_df$Answer_scrore[time_daily_long_df$ANS_TEXT == "Not at all"] <- 1
+time_daily_long_df$Answer_score[time_daily_long_df$ANS_TEXT == "Extremely" | time_daily_long_df$ANS_TEXT == "Quite a bit" | time_daily_long_df$ANS_TEXT == "Very much so"] <- 3
+time_daily_long_df$Answer_score[time_daily_long_df$ANS_TEXT == "Moderately" | time_daily_long_df$ANS_TEXT == "A little"] <- 2
+time_daily_long_df$Answer_score[time_daily_long_df$ANS_TEXT == "Not at all"] <- 1
 
 
 ```
@@ -198,10 +198,6 @@ time_daily_long_df$Q_ID <- tolower(time_daily_long_df$Q_ID)
 
 ```
 
-## Remove unwanted participants
-```{r}
-
-```
 
 
 ## create a subset for participant
@@ -282,3 +278,411 @@ write the dataframe to a csv file
 ```{r}
 write.csv(bema_wp_df, file="D:/uema_exploratory_plots/trajectory_plots/bema_wp_export.csv", row.names = FALSE, quote = FALSE, sep = ",")
 ```
+
+
+## Create a slope type function
+```{r}
+
+get_slope_type <- function(slist, vlist){
+  slope_type = ""
+  slist <- slist[!is.na(slist)]
+  vlist <- vlist[!is.na(vlist)]
+  # print("Slope list: ")
+  # print(slist)
+  # print("value list: ")
+  # print(vlist)
+  # print(length(unique(vlist)))
+  # print(unique(vlist))
+  
+  if (length(unique(vlist)) == 1){
+    if (unique(vlist) == 3){
+    slope_type = "Consistent-high"
+    } else if (unique(vlist) == 2) {
+    slope_type = "Consistent-medium"
+    } else if (unique(vlist) == 1){
+    slope_type = "Consistent-low"
+    }
+  } else {
+    if (all(diff(slist) >= 0)) {
+      slope_type = "Accumulation"
+    } else if (all(diff(slist) <= 0)){
+      # print("Satisfied")
+      slope_type = "Dissipation"
+    } else {
+      slope_type = "Fluctuating"
+    }
+  }
+  # print(paste0("Slope type found: ", slope_type))
+  return(slope_type)
+}
+
+```
+
+## Create function to get trajectory
+```{r}
+
+get_var_profile <- function(df, variable, wake_period_name){
+  wake_subset_df <- subset(df, df$wake_period == wake_period_name & df$Q_ID == variable)
+  # wake_subset_df <- subset(wake_subset_df, wake_subset_df$)
+  # wake_subset_df <- subset(wake_subset_df, wake_subset_df$Q_ID == variable)
+  # print(variable)
+  if (nrow(wake_subset_df) > 2){
+    slope_list <- c()
+    val_list = wake_subset_df$Answer_score
+    # print(val_list)
+    for (i in 1:nrow(wake_subset_df) - 1){
+      del_y <- wake_subset_df$Answer_score[i + 1] - wake_subset_df$Answer_score[i]
+      # print(paste0("del_y: ", del_y))
+      del_x <- as.numeric(difftime(wake_subset_df$prompt_date_time[i + 1], wake_subset_df$prompt_date_time[i], units = "hours"))
+      # print(paste0("del_x: ", del_x))
+      slope <- del_y/del_x
+      # print(paste0("slope: ", slope))
+      slope_list <- c(slope_list, slope)
+    }
+    profile_type <- get_slope_type(slope_list, val_list)
+    return(profile_type)
+  } else {
+    return(NA)
+  }
+}
+
+```
+
+## Generate temporal profile for each variable for p_id
+```{r}
+
+get_var_profile_df <- function(df, p_id){
+  # print(paste0("P_id: ", p_id))
+  
+  var_list_local <- unique(df$Q_ID)
+  # print(paste0("var_list_local: ", var_list_local))
+  wake_period_list_local <- unique(df$wake_period)
+  # print(paste0("wake_period_list_local: ", wake_period_list_local))
+  # print(paste0("Length of wake period: ", length(wake_period_list_local)))
+  var_profile_df <- matrix(ncol = length(var_list_local) + 2, nrow = length(wake_period_list_local))
+
+  for (i in 1:length(wake_period_list_local)){
+    # print(paste0("i: ", i))
+    
+    var_profile_df[i, 1] <- p_id
+    # print(var_profile_df[i, 1])
+    var_profile_df[i, 2] <- wake_period_list_local[[i]][1]
+    for (j in 1:length(var_list_local)){
+      var_profile_df[i, j + 2] <- get_var_profile(df, var_list_local[[j]][1], wake_period_list_local[[i]][1])
+    }
+    
+  }
+
+  var_profile_df <- as.data.frame(var_profile_df)
+  col_names <- c("p_id", "wake_period", var_list_local)
+  
+  names(var_profile_df) <- col_names
+  return (var_profile_df)
+}
+
+
+
+```
+
+## Get p_id_list
+```{r}
+p_id_list <- unique(time_daily_long_df$P_ID)
+```
+
+## Test function to explore user data
+```{r}
+
+p_id <- "neutergoldfishsworn@timestudy_com"
+# p_id <- "sharpnessnextpouch@timestudy_com"
+
+pid_subset_df <- prepare_pid_subset(time_daily_long_df, combined_report_df, p_id)
+
+pid_var_profile_df <- get_var_profile_df(pid_subset_df, p_id)
+
+# pid_var_dist_plot <- get_profile_dist_plot(pid_var_profile_df)
+
+## For varianc eonly
+# pid_variance_df <- get_variance_df(pid_subset_df, p_id)
+
+
+```
+
+## Get trajectories for all the participants
+Looping through the participant list to get the rowbinded trajectory data frame for each participant
+
+First create a combined function of getting subsets and then feeding subsets to the var profile
+```{r}
+
+get_trajectories_df <- function(response_df, report_df, user_id){
+  user_id_subset <- prepare_pid_subset(response_df, report_df, user_id)
+  user_var_profile_df <- get_var_profile_df(user_id_subset, user_id)
+  return(user_var_profile_df)
+}
+
+```
+
+
+```{r}
+
+combined_df = data.frame()
+
+for (username in p_id_list){
+  print(username)
+  temp_pid_df <- get_trajectories_df(time_daily_long_df, combined_report_df, username)
+  # head(temp_pid_df)
+  combined_df <- rbind(combined_df, temp_pid_df)
+  # tail(combined_df)
+}
+
+
+```
+
+## Save to file
+```{r}
+
+write.csv(combined_df, file="D:/new_data_pre_processed/bema_trajectories_combined.csv", quote = FALSE, row.names = FALSE, sep = ",")
+
+```
+## Remove the "unknown user" account
+```{r}
+
+combined_df <- subset(combined_df, combined_df$p_id != "aditya4_internal@timestudy_com")
+
+```
+
+
+## Summarize the distribution overall
+First, across all users and constructs --> to check if there is a general variability in responses
+
+```{r}
+num_waking_hours <- nrow(combined_df)
+num_pids <- length(unique(combined_df$p_id))
+
+
+```
+
+Get the distribution of waking hours
+```{r}
+get_waking_hr_dist <- function(df){
+  dist_table <- table(df$p_id)
+  dist_df <- as.data.frame(dist_table)
+  max_wh <- max(dist_df$Freq)
+  min_wh <- min(dist_df$Freq)
+  median_wh <- median(dist_df$Freq)
+  return(c(min_wh, median_wh, max_wh))
+}
+```
+
+Get distribution values
+```{r}
+dist_wh <- get_waking_hr_dist(combined_df)
+
+```
+
+
+Count the occurrences of different trajectory types across the dataframe
+```{r}
+
+
+
+get_trajectory_freqs <- function(df){
+  freq_df <- data.frame()
+  col_names <- names(df)
+  col_names <- col_names[3:ncol(df)]
+  for (col in col_names){
+    col_table <- table(df[[col]])
+    col_df <- as.data.frame(col_table)
+    col_df$var_name <- col
+    col_df <- col_df %>% select(var_name, everything())
+    freq_df <- rbind(freq_df, col_df)
+  }
+  
+  return(freq_df)
+}
+
+```
+
+Now get the df
+```{r}
+trajectory_dist <- get_trajectory_freqs(combined_df)
+```
+
+Aggregate for each construct and trajectory type pair
+```{r}
+
+trajectory_aggregate_df <- aggregate(.~var_name+Var1, trajectory_dist, sum)
+
+```
+
+Aggregate for each trajectory type --> across all constructs and users
+
+```{r}
+trajectory_summary_df <- aggregate(trajectory_dist$Freq,
+                by = list(trajectory_dist$Var1),
+                FUN = sum)
+
+```
+
+Plot by variable --> heat map
+```{r}
+
+traj_plot <- ggplot(trajectory_dist, aes(x = Var1, y = var_name)) + 
+  geom_tile(aes(fill = Freq)) + 
+  scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + 
+  ggtitle("Trajectories vs variables") + 
+  ylab("Burst EMA constructs") + 
+  xlab("Wake period trajectory types") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+```
+
+add %days to trajectory_dist
+```{r}
+trajectory_dist$var_sum_days <- ave(trajectory_dist$Freq, trajectory_dist$var_name, FUN = sum)
+
+trajectory_dist$perc_days <- trajectory_dist$Freq/trajectory_dist$var_sum_days
+```
+get construct wise trajectory table
+```{r}
+
+construct_trajectory_df <- dcast(trajectory_dist, var_name ~ Var1, value.var="Freq")
+
+```
+
+Get participant-wise construct-trajectory frequencies
+```{r}
+
+get_pid_trajectory_freqs <- function(df){
+  user_list <- unique(df$p_id)
+  user_freq_df <- data.frame()
+  for (user in user_list){
+    # print(user)
+    user_df <- subset(df, df$p_id == user)
+    freq_df <- data.frame()
+  col_names <- names(user_df)
+  col_names <- col_names[3:ncol(user_df)]
+  # col_to_remove <- c("sleep")
+  # col_names <- col_names[!col_names %in% col_to_remove]
+  for (col in col_names){
+    # print(col)
+    col_table <- table(user_df[[col]])
+    # print(col_table)
+    if (length(col_table) != 0){
+      col_df <- as.data.frame(col_table)
+      col_df$var_name <- col
+      col_df <- col_df %>% select(var_name, everything())
+      col_df$user_name <- user
+      col_df <- col_df %>% select(user_name, everything())
+      freq_df <- rbind(freq_df, col_df)
+    }
+    
+  }
+  user_freq_df <- rbind(user_freq_df, freq_df)
+  }
+  
+  return(user_freq_df)
+}
+
+
+```
+
+Create a uema_df with only 100 TIME days and above
+```{r}
+
+combined_df$n <- 1
+
+combined_df$p_id_days <- ave(combined_df$n, combined_df$p_id, FUN = sum)
+
+combined_100_df <- subset(combined_df, combined_df$p_id_days >= 48)
+
+combined_100_df <- combined_100_df[, !names(combined_100_df) %in% c("n", "p_id_days")]
+
+combined_df <- combined_df[, !names(combined_df) %in% c("n", "p_id_days")]
+
+```
+
+Write combined_df to a csv file
+```{r}
+write.csv(combined_df, file="D:/uema_exploratory_plots/trajectory_plots/bema_merged_df.csv", row.names = FALSE, quote = FALSE)
+```
+
+
+Get the dataframe for the uema_df
+```{r}
+pid_trajectories_freq_df <- get_pid_trajectory_freqs(combined_100_df)
+```
+
+
+Recode participant id and trajectory id
+```{r}
+plist <- unique(pid_trajectories_freq_df$user_name)
+pindex <- c(1:length(plist))
+pindex <- paste("P_", pindex, sep="")
+trajectory_mapping <- c("Consistent-high" = "6", "Accumulation" = "5", "Fluctuating" = "4", "Consistent-medium" = "3", "Dissipation" = "2", "Consistent-low" = "1")
+
+pmap_df <- data.frame(plist, pindex)
+names(pmap_df) <- c("user_name", "p_index")
+
+pid_trajectories_freq_df <- merge(pid_trajectories_freq_df, pmap_df, by.x = "user_name")
+```
+
+map category values
+```{r}
+
+
+pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Consistent-high"] <- "6"
+pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Accumulation"] <- "5"
+pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Fluctuating"] <- "4"
+pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Consistent-medium"] <- "3"
+pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Dissipation"] <- "2"
+pid_trajectories_freq_df$trajectory_type[pid_trajectories_freq_df$Var1 == "Consistent-low"] <- "1"
+
+
+```
+
+sort by p_index
+```{r}
+pid_trajectories_freq_df <- pid_trajectories_freq_df[order(pid_trajectories_freq_df$user_name), ]
+```
+
+
+plot grouped by participant
+```{r}
+
+pid_traj_plot <- ggplot(pid_trajectories_freq_df, aes(x = trajectory_type, y = var_name)) + 
+  geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + 
+  ggtitle("Trajectories vs variables") + 
+  ylab("Burst EMA constructs") + 
+  xlab("Wake period trajectory types") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+  facet_wrap(~p_index, nrow = 5) + 
+  theme(strip.text.x = element_text(size = 6, colour = "black", margin = margin(2,0,2,0, "mm"))) + 
+  theme(axis.text.x = element_text(size=6, hjust=1), axis.text.y = element_text(size = 6, hjust = 1))
+
+
+```
+
+Create function to get participant specific plots
+```{r}
+
+plot_pid_trajectories <- function(df, id){
+  df_subset <- subset(df, df$user_name == id)
+  # print(df_subset)
+  plot <- ggplot(df_subset, aes(x = trajectory_type, y = var_name)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') +
+    ggtitle(id) + 
+    ylab("Burst EMA constructs") + 
+    xlab("Wake period trajectory types") + 
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+  return(plot)
+}
+
+
+```
+
+## Read in the burst eod summary file
+```{r}
+
+burst_eod_merged_df <- read.csv(file="D:/uema_exploratory_plots/trajectory_plots/eod_wp_export.csv", header = TRUE, sep = ",")
+
+```
+

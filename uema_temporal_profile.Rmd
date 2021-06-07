@@ -170,46 +170,6 @@ get_uEMA_pid_var_df <- function(df, variable){
 
 ```
 
-# Test code for a single participant
-
-## get p-id subsets
-First for the uEMA combined file
-
-<!-- ```{r} -->
-<!-- participant_id = "sharpnessnextpouch@timestudy_com" -->
-
-<!-- subset_pid_df <- get_uEMA_pid_df(combined_uema_file, participant_id)  -->
-<!-- ``` -->
-
-<!-- Then for the combined daily report file -->
-<!-- ```{r} -->
-
-<!-- report_pid_df <- get_report_pid_df(combined_report_df, participant_id) -->
-
-<!-- ``` -->
-
-## add a waking period column to each response row
-```{r}
-
-# for(i in 1:nrow(report_pid_df)){
-#   # print(paste0(i, " _ ", report_pid_df$current_wake_time[i]))
-#   subset_pid_df$wake_period[subset_pid_df$date_timestamp >= report_pid_df$current_wake_time[i] & subset_pid_df$date_timestamp <= report_pid_df$current_sleep_time[i]] <- paste0("Wake_period_", i)
-# }
-
-```
-
-## Remove CS microEMA
-```{r}
-# subset_pid_df <- subset(subset_pid_df, subset_pid_df$Q_ID != "activity")
-```
-
-
-## Get a list of relevant construct/variable names
-```{r}
-# var_list <- unique(subset_pid_df$Q_ID)
-# wake_period_list <- unique(subset_pid_df$wake_period)
-
-```
 
 ## get p_id_subset
 ```{r}
@@ -272,9 +232,9 @@ get_slope_type <- function(slist, vlist){
     slope_type = "Consistent-low"
     }
   } else {
-    if (all(diff(slist) <= 0)) {
+    if (all(diff(slist) >= 0)) {
       slope_type = "Accumulation"
-    } else if (all(diff(slist) >= 0)){
+    } else if (all(diff(slist) <= 0)){
       # print("Satisfied")
       slope_type = "Dissipation"
     } else {
