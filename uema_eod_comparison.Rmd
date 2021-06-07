@@ -491,6 +491,29 @@ get_extreme_mapping_df <- function(df, uema_var, ema_var){
 ```
 
 
+Disaggregate extreme mapping for consistent-high and consistent-low
+```{r}
+
+get_ch_extreme_df <- function(df, uema_var, ema_var){
+  var_df <- df[, c("p_id", "wake_period", uema_var, ema_var)]
+  extreme_mapping_df <- subset(var_df, (var_df[[uema_var]] == "Consistent-high" & (var_df[[ema_var]] == "Extremely" | var_df[[ema_var]] == "Very much so")))
+  return(extreme_mapping_df)
+}
+
+```
+
+For consistent-low
+```{r}
+
+get_cl_notatall_df <- function(df, uema_var, ema_var){
+  var_df <- df[, c("p_id", "wake_period", uema_var, ema_var)]
+  extreme_mapping_df <- subset(var_df, (var_df[[uema_var]] == "Consistent-low" & var_df[[ema_var]] == "Not at all"))
+  return(extreme_mapping_df)
+}
+
+```
+
+
 get number of rows for extreme mapping effects of each construct
 
 ```{r}
@@ -508,7 +531,8 @@ total_traj_list <- c()
 
 for (vars in var_dict){
   # print(vars[[1]])
-  temp_df <- get_extreme_mapping_df(merged_df, vars[[1]], vars[[2]])
+  ## Replace with approapriate functions here -- get_extreme_mapping_df, get_cl_notatall_df, get_ch_extreme_df
+  temp_df <- get_cl_notatall_df(merged_df, vars[[1]], vars[[2]])
   total_observation <- nrow(temp_df)
   var_name <- strsplit(vars[[1]], 'uema_')[[1]][2]
   # print(var_name)

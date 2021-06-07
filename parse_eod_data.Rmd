@@ -40,8 +40,15 @@ combined_ema_file <- ldply(list_of_files, read.csv, header = TRUE, na.strings = 
 ```{r}
 
 combined_ema_time_daily_df <- subset(combined_ema_file, combined_ema_file$Prompt_Type == "Daily" & combined_ema_file$Study_Mode == "TIME")
+# combined_ema_time_daily_df <- subset(combined_ema_file, combined_ema_file$Prompt_Type == "EMA" & combined_ema_file$Study_Mode == "BURST")
 
 ```
+
+## Remove never prompted
+```{r}
+combined_ema_time_daily_df <- subset(combined_ema_time_daily_df, combined_ema_time_daily_df$Answer_Status != "NeverPrompted")
+```
+
 
 ## Filter out never started or neverprompted prompts
 ```{r}
@@ -136,6 +143,11 @@ time_daily_long_df <- subset(time_daily_long_df, time_daily_long_df$prompt_date_
 
 time_daily_long_df$Q_ID <- gsub('[Q]{1}\\d{1,2}_', '', time_daily_long_df$Q_D)
 
+```
+
+Convert the question text to quotes
+```{r}
+time_daily_long_df$Q_TEXT <- paste0("'", time_daily_long_df$Q_TEXT, "'")
 ```
 
 
@@ -313,6 +325,35 @@ for (username in p_id_list){
 }
 
 ```
+
+Create a test function to only get the wake period attached to prompt responses for all the users
+```{r}
+
+eod_wp_export_df <- data.frame()
+
+for (username in p_id_list){
+  username <- paste0(username, "@timestudy_com")
+  
+  temp_pid_df <- prepare_pid_subset(time_daily_long_df, combined_report_df, username)
+  eod_wp_export_df <- rbind(eod_wp_export_df, temp_pid_df)
+  
+}
+
+```
+
+Remove the comma from question text
+```{r}
+
+eod_wp_export_df$Q_TEXT <- as.character(gsub(",", "", eod_wp_export_df$Q_TEXT))
+
+```
+
+
+## Write the combined file to csv
+```{r}
+write.csv(eod_wp_export_df, file = "D:/uema_exploratory_plots/trajectory_plots/eod_wp_export.csv", row.names = FALSE, quote = FALSE, sep = ",")
+```
+
 
 ## write the file to csv
 ```{r}
