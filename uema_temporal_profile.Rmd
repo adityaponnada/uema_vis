@@ -272,9 +272,9 @@ get_slope_type <- function(slist, vlist){
     slope_type = "Consistent-low"
     }
   } else {
-    if (all(diff(slist) <= 0)) {
+    if (all(diff(slist) >= 0)) {
       slope_type = "Accumulation"
-    } else if (all(diff(slist) >= 0)){
+    } else if (all(diff(slist) <= 0)){
       # print("Satisfied")
       slope_type = "Dissipation"
     } else {
