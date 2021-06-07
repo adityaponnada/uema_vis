@@ -379,6 +379,10 @@ get the ema uema pair frequency data frame
 get_var_freq_plot <- function(df, uema_var, ema_var){
   var_only_subset_df <- df[, c(uema_var, ema_var)]
   var_pair_count_df <- as.data.frame(table(var_only_subset_df))
+  var_pair_count_df <- subset(var_pair_count_df, var_pair_count_df[[ema_var]] != "_NOT_ANS_")
+  
+  eod_order <- c("Not at all", "A little", "Moderately", "Quite a bit", "Extremely", "Very much so")
+  var_pair_count_df[[ema_var]] <- factor(var_pair_count_df[[ema_var]], levels = eod_order)
   # print(head(var_pair_count_df))
   g_plot <- ggplot(var_pair_count_df, aes_string(x = ema_var, y = uema_var)) + 
     geom_tile(aes(fill = Freq)) + 
