@@ -436,3 +436,11 @@ for (username in p_id_list){
 
 
 ```
+
+## Save to file
+```{r}
+
+write.csv(combined_df, file="D:/new_data_pre_processed/bema_trajectories_combined.csv", quote = FALSE, row.names = FALSE, sep = ",")
+
+```
+
