@@ -175,9 +175,9 @@ Moderately, a little --> 2 (sort of)
 Not at all --> No --> 1
 ```{r}
 
-time_daily_long_df$Answer_scrore[time_daily_long_df$ANS_TEXT == "Extremely" | time_daily_long_df$ANS_TEXT == "Quite a bit" | time_daily_long_df$ANS_TEXT == "Very much so"] <- 3
-time_daily_long_df$Answer_scrore[time_daily_long_df$ANS_TEXT == "Moderately" | time_daily_long_df$ANS_TEXT == "A little"] <- 2
-time_daily_long_df$Answer_scrore[time_daily_long_df$ANS_TEXT == "Not at all"] <- 1
+time_daily_long_df$Answer_score[time_daily_long_df$ANS_TEXT == "Extremely" | time_daily_long_df$ANS_TEXT == "Quite a bit" | time_daily_long_df$ANS_TEXT == "Very much so"] <- 3
+time_daily_long_df$Answer_score[time_daily_long_df$ANS_TEXT == "Moderately" | time_daily_long_df$ANS_TEXT == "A little"] <- 2
+time_daily_long_df$Answer_score[time_daily_long_df$ANS_TEXT == "Not at all"] <- 1
 
 
 ```
@@ -198,10 +198,6 @@ time_daily_long_df$Q_ID <- tolower(time_daily_long_df$Q_ID)
 
 ```
 
-## Remove unwanted participants
-```{r}
-
-```
 
 
 ## create a subset for participant
@@ -281,4 +277,123 @@ for (pid in plist){
 write the dataframe to a csv file
 ```{r}
 write.csv(bema_wp_df, file="D:/uema_exploratory_plots/trajectory_plots/bema_wp_export.csv", row.names = FALSE, quote = FALSE, sep = ",")
+```
+
+
+## Create a slope type function
+```{r}
+
+get_slope_type <- function(slist, vlist){
+  slope_type = ""
+  # print(slist)
+  # print(vlist)
+  # print(length(unique(vlist)))
+  # print(unique(vlist))
+  
+  if (length(unique(vlist)) == 1){
+    if (unique(vlist) == 3){
+    slope_type = "Consistent-high"
+    } else if (unique(vlist) == 2) {
+    slope_type = "Consistent-medium"
+    } else if (unique(vlist) == 1){
+    slope_type = "Consistent-low"
+    }
+  } else {
+    if (all(diff(slist) <= 0)) {
+      slope_type = "Accumulation"
+    } else if (all(diff(slist) >= 0)){
+      # print("Satisfied")
+      slope_type = "Dissipation"
+    } else {
+      slope_type = "Fluctuating"
+    }
+  }
+  return(slope_type)
+}
+
+```
+
+## Create function to get trajectory
+```{r}
+
+get_var_profile <- function(df, variable, wake_period_name){
+  wake_subset_df <- subset(df, df$wake_period == wake_period_name & df$Q_ID == variable)
+  # wake_subset_df <- subset(wake_subset_df, wake_subset_df$Q_ID == variable)
+  # print(variable)
+  if (nrow(wake_subset_df) > 2){
+    slope_list <- c()
+    val_list = wake_subset_df$Answer_score
+    # print(val_list)
+    for (i in 1:nrow(wake_subset_df) - 1){
+      del_y <- wake_subset_df$Answer_score[i + 1] - wake_subset_df$Answer_score[i]
+      del_x <- as.numeric(difftime(wake_subset_df$date_timestamp[i + 1], wake_subset_df$date_timestamp[i], units = "hours"))
+      slope <- del_y/del_x
+      slope_list <- c(slope_list, slope)
+    }
+    profile_type <- get_slope_type(slope_list, val_list)
+    return(profile_type)
+  } else {
+    return(NA)
+  }
+}
+
+```
+
+## Generate temporal profile for each variable for p_id
+```{r}
+
+get_var_profile_df <- function(df, p_id){
+  # print(paste0("P_id: ", p_id))
+  
+  var_list_local <- unique(df$Q_ID)
+  # print(paste0("var_list_local: ", var_list_local))
+  wake_period_list_local <- unique(df$wake_period)
+  # print(paste0("wake_period_list_local: ", wake_period_list_local))
+  # print(paste0("Length of wake period: ", length(wake_period_list_local)))
+  var_profile_df <- matrix(ncol = length(var_list_local) + 2, nrow = length(wake_period_list_local))
+
+  for (i in 1:length(wake_period_list_local)){
+    # print(paste0("i: ", i))
+    
+    var_profile_df[i, 1] <- p_id
+    # print(var_profile_df[i, 1])
+    var_profile_df[i, 2] <- wake_period_list_local[[i]][1]
+    for (j in 1:length(var_list_local)){
+      var_profile_df[i, j + 2] <- get_var_profile(df, var_list_local[[j]][1], wake_period_list_local[[i]][1])
+    }
+    
+  }
+
+  var_profile_df <- as.data.frame(var_profile_df)
+  col_names <- c("p_id", "wake_period", var_list_local)
+  
+  names(var_profile_df) <- col_names
+  return (var_profile_df)
+}
+
+
+
+```
+
+## Get p_id_list
+```{r}
+p_id_list <- unique(time_daily_long_df$P_ID)
+```
+
+## Test function to explore user data
+```{r}
+
+p_id <- "neutergoldfishsworn@timestudy_com"
+# p_id <- "sharpnessnextpouch@timestudy_com"
+
+pid_subset_df <- prepare_pid_subset(time_daily_long_df, combined_report_df, p_id)
+
+pid_var_profile_df <- get_var_profile_df(pid_subset_df, p_id)
+
+# pid_var_dist_plot <- get_profile_dist_plot(pid_var_profile_df)
+
+## For varianc eonly
+# pid_variance_df <- get_variance_df(pid_subset_df, p_id)
+
+
 ```
