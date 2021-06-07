@@ -53,6 +53,16 @@ combined_report_df <- read.csv(combined_report_file, header = TRUE, sep = ',')
 
 ```
 
+## uEMA descriptives
+```{r}
+
+n_prompted <- nrow(combined_uema_file)
+
+table(combined_uema_file$Answer_Status)
+
+```
+
+
 ## Convert the prompt time to date time column
 For uEMA combined file
 

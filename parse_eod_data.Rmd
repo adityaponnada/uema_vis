@@ -40,8 +40,15 @@ combined_ema_file <- ldply(list_of_files, read.csv, header = TRUE, na.strings = 
 ```{r}
 
 combined_ema_time_daily_df <- subset(combined_ema_file, combined_ema_file$Prompt_Type == "Daily" & combined_ema_file$Study_Mode == "TIME")
+# combined_ema_time_daily_df <- subset(combined_ema_file, combined_ema_file$Prompt_Type == "EMA" & combined_ema_file$Study_Mode == "BURST")
 
 ```
+
+## Remove never prompted
+```{r}
+combined_ema_time_daily_df <- subset(combined_ema_time_daily_df, combined_ema_time_daily_df$Answer_Status != "NeverPrompted")
+```
+
 
 ## Filter out never started or neverprompted prompts
 ```{r}
