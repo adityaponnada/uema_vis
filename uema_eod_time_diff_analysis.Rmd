@@ -240,3 +240,104 @@ merged_timediff <- merge(long_merged_df, pid_wp_qid_df, by.x = "pid_wp_qid", by.
 
 ```
 
+
+## extreme mapping plots
+Comparing the following:
+Histogram of timediff for consistent-high --> Extremely/Very much so
+Histogram for timediff when consistent-high X--> Extremely/Very much so
+```{r}
+
+get_ch_extreme_mapping_plot <- function(df){
+  df <- subset(df, df$uema == "Consistent-high")
+  
+  # | df$eod == "Quite a bit"
+  
+  df$mapping_type[df$eod == "Extremely" | df$eod == "Very much so"] <- "High-to-high mapping" 
+  df$mapping_type[df$eod != "Extremely" & df$eod != "Very much so"] <- "No high-to-high mapping" 
+  
+  # df$mapping_type[df$uema == "Consistent-high" && !(df$eod == "Extremely" || df$eod == "Very much so")] <- "No high-to-high mapping" 
+  df <- subset(df, !is.na(df$mapping_type))
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ .) +
+    ggtitle("Consistent-high --> extremely/very much so") +
+    xlab("Difference between EOD and last uEMA in hrs") +
+    ylim(0, 300)
+  
+  return(gplot)
+}
+
+```
+
+
+Histogram time diff for consistent-low --> not at all and consistent-low X--> not at all
+```{r}
+
+get_cl_extreme_mapping_plot <- function(df){
+  df <- subset(df, df$uema == "Consistent-low")
+  
+  df$mapping_type[df$eod == "Not at all"] <- "Low-to-low mapping" 
+  df$mapping_type[df$eod != "Not at all"] <- "No low-to-low mapping" 
+  
+  # df$mapping_type[df$uema == "Consistent-high" && !(df$eod == "Extremely" || df$eod == "Very much so")] <- "No high-to-high mapping" 
+  df <- subset(df, !is.na(df$mapping_type))
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ .) +
+    ggtitle("Consistent-low --> Not at all") +
+    xlab("Difference between EOD and last uEMA in hrs") +
+    ylim(0, 300)
+  
+  return(gplot)
+}
+
+```
+
+get plots by construct for consistent-low to not at all
+```{r}
+
+get_cl_extreme_variable_plot <- function(df){
+  df <- subset(df, df$uema == "Consistent-low")
+  
+  df$mapping_type[df$eod == "Not at all"] <- "Low-to-low mapping" 
+  df$mapping_type[df$eod != "Not at all"] <- "No low-to-low mapping" 
+  
+  # df$mapping_type[df$uema == "Consistent-high" && !(df$eod == "Extremely" || df$eod == "Very much so")] <- "No high-to-high mapping" 
+  df <- subset(df, !is.na(df$mapping_type))
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ uema_id) +
+    ggtitle("Consistent-low --> Not at all") +
+    xlab("Difference between EOD and last uEMA in hrs") +
+    ylim(0, 100)
+  
+  return(gplot)
+}
+
+```
+
+get plots by construct for consistent-high to extremely/very much so
+```{r}
+
+get_ch_extreme_variable_plot <- function(df){
+  df <- subset(df, df$uema == "Consistent-high")
+  # | df$eod == "Quite a bit"
+  
+  df$mapping_type[df$eod == "Extremely" | df$eod == "Very much so"] <- "High-to-high mapping" 
+  df$mapping_type[df$eod != "Extremely" & df$eod != "Very much so"] <- "No high-to-high mapping" 
+  
+  # df$mapping_type[df$uema == "Consistent-high" && !(df$eod == "Extremely" || df$eod == "Very much so")] <- "No high-to-high mapping" 
+  df <- subset(df, !is.na(df$mapping_type))
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ uema_id) +
+    ggtitle("Consistent-high --> Extremely/Very much so") +
+    xlab("Difference between EOD and last uEMA in hrs") +
+    ylim(0, 100)
+  
+  return(gplot)
+}
+
+```
+
+
