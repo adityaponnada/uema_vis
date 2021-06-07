@@ -340,4 +340,80 @@ get_ch_extreme_variable_plot <- function(df){
 
 ```
 
+## Get the peak effects plots
+Peak effects include: Accumulation, fluctuation, and dissipation --> extremely, very much so, and quite a bit
+```{r}
+
+get_peak_effects_plot <- function(df){
+  
+  uema_answer_list <- c("Accumulation", "Fluctuating", "Dissipation")
+  eod_answer_list <- c("Extremely", "Very much so")
+  
+  df <- subset(df, df$uema %in% uema_answer_list)
+  
+  df$mapping_type[df$eod %in% eod_answer_list] <- "Peak-effect"
+  df$mapping_type[!(df$eod %in% eod_answer_list)] <- "No peak-effect"
+  
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ .) +
+    ggtitle("Peak effects") +
+    xlab("Difference between EOD and last uEMA in hrs") +
+    ylim(0, 100)
+  
+  return(gplot)
+}
+
+```
+
+Group the plot by uema trajectory type
+```{r}
+
+get_peak_effects_trajectory_plot <- function(df){
+  
+  uema_answer_list <- c("Accumulation", "Fluctuating", "Dissipation")
+  eod_answer_list <- c("Extremely", "Very much so")
+  
+  df <- subset(df, df$uema %in% uema_answer_list)
+  
+  df$mapping_type[df$eod %in% eod_answer_list] <- "Peak-effect"
+  df$mapping_type[!(df$eod %in% eod_answer_list)] <- "No peak-effect"
+  
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ uema) +
+    ggtitle("Peak effects") +
+    xlab("Difference between EOD and last uEMA in hrs") +
+    ylim(0, 100)
+  
+  return(gplot)
+}
+
+```
+
+Group by variable for peak effects
+```{r}
+
+get_peak_effect_variable_plot <- function(df){
+  
+  uema_answer_list <- c("Accumulation", "Fluctuating", "Dissipation")
+  eod_answer_list <- c("Extremely", "Very much so")
+  
+  df <- subset(df, df$uema %in% uema_answer_list)
+  
+  df$mapping_type[df$eod %in% eod_answer_list] <- "Peak-effect"
+  df$mapping_type[!(df$eod %in% eod_answer_list)] <- "No peak-effect"
+  
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ uema_id) +
+    ggtitle("Peak effects") +
+    xlab("Difference between EOD and last uEMA in hrs") +
+    ylim(0, 100)
+  
+  return(gplot)
+  
+}
+
+```
 
