@@ -758,3 +758,31 @@ merging by using p_id and wake period only
 merged_df <-merge(bema_df,eod_df,by=c("p_id","wake_period")) 
 
 ```
+
+get the ema uema pair frequency data frame
+```{r}
+
+get_var_freq_plot <- function(df, uema_var, ema_var){
+  var_only_subset_df <- df[, c(uema_var, ema_var)]
+  var_pair_count_df <- as.data.frame(table(var_only_subset_df))
+  var_pair_count_df <- subset(var_pair_count_df, var_pair_count_df[[ema_var]] != "_NOT_ANS_")
+  # var_pair_count_df <- var_pair_count_df[!is.na(var_pair_count_df[[ema_var]]), ]
+  
+  eod_order <- c("Not at all", "A little", "Moderately", "Quite a bit", "Extremely", "Very much so")
+  var_pair_count_df[[ema_var]] <- factor(var_pair_count_df[[ema_var]], levels = eod_order)
+  # print(head(var_pair_count_df))
+  g_plot <- ggplot(var_pair_count_df, aes_string(x = ema_var, y = uema_var)) + 
+    geom_tile(aes(fill = Freq)) + 
+    scale_fill_gradient(name = 'Frequency', low = 'white', high = 'black') + 
+    theme(axis.title.y = element_blank()) + 
+    ggtitle(paste0(uema_var, " and ", ema_var)) + 
+    theme(strip.text.x = element_text(size = 6, colour = "black", margin = margin(2,0,2,0, "mm"))) + 
+    theme(axis.text.x = element_text(size=6, hjust=1), axis.text.y = element_text(size = 6, hjust = 1)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    theme(plot.title = element_text(size=10))
+  return(g_plot)
+}
+
+```
+
+
