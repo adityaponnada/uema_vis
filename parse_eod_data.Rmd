@@ -291,7 +291,7 @@ get_var_profile_df <- function(df, p_id){
 ## Create a test for a sample user
 ```{r}
 
-p_id <- "annuitybreechesdesigned@timestudy_com"
+p_id <- "edgeclerkdirectly@timestudy_com"
 
 pid_subset_df <- prepare_pid_subset(time_daily_long_df, combined_report_df, p_id)
 

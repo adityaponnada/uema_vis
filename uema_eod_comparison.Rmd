@@ -17,6 +17,7 @@ library(reshape2)
 library(cowplot)
 library(patchwork)
 library(gridExtra)
+options(digits = 4)
 ```
 
 ## Read the uEMA file
@@ -441,8 +442,9 @@ get rows satisfying peak effects criteria
 ```{r}
 
 get_peak_effects_df <- function(df, uema_var, ema_var){
+  # | var_df[[ema_var]] == "Quite a bit")
   var_df <- df[, c("p_id", "wake_period", uema_var, ema_var)]
-  peak_effects_df <- subset(var_df, (var_df[[uema_var]] == "Accumulation" | var_df[[uema_var]] == "Fluctuating" | var_df[[uema_var]] == "Dissipation") & (var_df[[ema_var]] == "Extremely" | var_df[[ema_var]] == "Quite a bit"))
+  peak_effects_df <- subset(var_df, (var_df[[uema_var]] == "Accumulation" | var_df[[uema_var]] == "Fluctuating" | var_df[[uema_var]] == "Dissipation") & (var_df[[ema_var]] == "Extremely"))
   return(peak_effects_df)
 }
 
@@ -499,8 +501,9 @@ Disaggregate extreme mapping for consistent-high and consistent-low
 ```{r}
 
 get_ch_extreme_df <- function(df, uema_var, ema_var){
+  # | var_df[[ema_var]] == "Quite a bit"
   var_df <- df[, c("p_id", "wake_period", uema_var, ema_var)]
-  extreme_mapping_df <- subset(var_df, (var_df[[uema_var]] == "Consistent-high" & (var_df[[ema_var]] == "Extremely" | var_df[[ema_var]] == "Very much so")))
+  extreme_mapping_df <- subset(var_df, (var_df[[uema_var]] == "Consistent-high" & (var_df[[ema_var]] == "Extremely" | var_df[[ema_var]] == "Very much so" | var_df[[ema_var]] == "Quite a bit")))
   return(extreme_mapping_df)
 }
 
@@ -536,14 +539,16 @@ total_traj_list <- c()
 for (vars in var_dict){
   # print(vars[[1]])
   ## Replace with approapriate functions here -- get_extreme_mapping_df, get_cl_notatall_df, get_ch_extreme_df
-  temp_df <- get_cl_notatall_df(merged_df, vars[[1]], vars[[2]])
+  temp_df <- get_ch_extreme_df(merged_df, vars[[1]], vars[[2]])
   total_observation <- nrow(temp_df)
   var_name <- strsplit(vars[[1]], 'uema_')[[1]][2]
   # print(var_name)
   # var_name <- vars[[1]]
   var_search <- vars[[1]]
   total_uema_count <- length(na.omit(merged_df[[var_search]]))
-  extreme_answers <- c("Consistent-high", "Consistent-low")
+  # extreme_answers <- c("Consistent-high", "Consistent-low")
+  extreme_answers <- c("Consistent-high")
+  # extreme_answers <- c("Consistent-low")
   total_extreme_count <- length(merged_df[[var_search]][merged_df[[var_search]] %in% extreme_answers])
   var_list <- c(var_list, var_name)
   count_list <- c(count_list, total_observation)
@@ -553,8 +558,8 @@ for (vars in var_dict){
 
 extreme_mapping_df <- data.frame(var_list, count_list, total_meas_list, total_traj_list)
 
-extreme_mapping_df$total_perc <- extreme_mapping_df$count_list/extreme_mapping_df$total_meas_list
-extreme_mapping_df$extreme_day_perc <- extreme_mapping_df$count_list/extreme_mapping_df$total_traj_list
+extreme_mapping_df$total_perc <- extreme_mapping_df$count_list*100/extreme_mapping_df$total_meas_list
+extreme_mapping_df$extreme_day_perc <- extreme_mapping_df$count_list*100/extreme_mapping_df$total_traj_list
 
 ```
 
