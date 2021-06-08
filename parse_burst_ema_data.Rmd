@@ -818,7 +818,7 @@ get rows satisfying peak effects criteria
 get_peak_effects_df <- function(df, uema_var, ema_var){
   # | var_df[[ema_var]] == "Quite a bit")
   var_df <- df[, c("p_id", "wake_period", uema_var, ema_var)]
-  peak_effects_df <- subset(var_df, (var_df[[uema_var]] == "Accumulation" | var_df[[uema_var]] == "Fluctuating" | var_df[[uema_var]] == "Dissipation") & (var_df[[ema_var]] == "Extremely"))
+  peak_effects_df <- subset(var_df, (var_df[[uema_var]] == "Accumulation" | var_df[[uema_var]] == "Fluctuating" | var_df[[uema_var]] == "Dissipation") & (var_df[[ema_var]] == "Extremely" | var_df[[ema_var]] == "Quite a bit"))
   return(peak_effects_df)
 }
 
@@ -961,7 +961,7 @@ Disaggregate extreme mapping for consistent-high and consistent-low
 
 get_ch_extreme_df <- function(df, uema_var, ema_var){
   var_df <- df[, c("p_id", "wake_period", uema_var, ema_var)]
-  extreme_mapping_df <- subset(var_df, (var_df[[uema_var]] == "Consistent-high" & (var_df[[ema_var]] == "Extremely" | var_df[[ema_var]] == "Very much so")))
+  extreme_mapping_df <- subset(var_df, (var_df[[uema_var]] == "Consistent-high" & (var_df[[ema_var]] == "Extremely" | var_df[[ema_var]] == "Very much so" | var_df[[ema_var]] == "Quite a bit")))
   return(extreme_mapping_df)
 }
 
