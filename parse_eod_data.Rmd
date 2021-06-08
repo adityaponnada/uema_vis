@@ -363,7 +363,7 @@ eod_wp_export_df$Q_TEXT <- as.character(gsub(",", "", eod_wp_export_df$Q_TEXT))
 
 ## Write the combined file to csv
 ```{r}
-write.csv(eod_wp_export_df, file = "D:/uema_exploratory_plots/trajectory_plots/eod_wp_export.csv", row.names = FALSE, quote = FALSE, sep = ",")
+write.csv(eod_wp_export_df, file = "D:/uema_exploratory_plots/trajectory_plots/beod_wp_export.csv", row.names = FALSE, quote = FALSE, sep = ",")
 ```
 
 

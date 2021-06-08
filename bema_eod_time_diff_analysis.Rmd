@@ -1,0 +1,46 @@
+---
+title: "bema_eod_time_diff_analysis"
+author: "Aditya Ponnada"
+date: "6/8/2021"
+output: html_document
+---
+
+## Import library
+```{r}
+
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(reshape2)
+library(purrr)
+
+```
+
+## Read the uEMA combined responses + wake period mapped file
+```{r}
+
+bema_responses_path = "D:/uema_exploratory_plots/trajectory_plots/bema_wp_export.csv"
+
+uema_wp_df <- read.csv(file=bema_responses_path, sep = ",", header = TRUE, row.names = NULL)
+
+
+```
+
+## Read the EOD file combined responses + wake period mapped
+```{r}
+
+eod_path <- "D:/uema_exploratory_plots/trajectory_plots/beod_wp_export.csv"
+
+eod_df <- read.csv(file=eod_path, sep = ",", header = TRUE, row.names = NULL)
+
+
+```
+
+## Read the long format file for uema and eod
+```{r}
+
+long_merged_path = "D:/uema_exploratory_plots/trajectory_plots/bema_eod_merged_long_df.csv"
+
+long_merged_df <- read.csv(file=long_merged_path, sep = ",", header = TRUE)
+
+```
