@@ -359,7 +359,7 @@ get_peak_effects_plot <- function(df){
   facet_grid(mapping_type ~ .) +
     ggtitle("Peak effects") +
     xlab("Difference between EOD and last uEMA in hrs") +
-    ylim(0, 100)
+    ylim(0, 1200)
   
   return(gplot)
 }
@@ -384,7 +384,7 @@ get_peak_effects_trajectory_plot <- function(df){
   facet_grid(mapping_type ~ uema) +
     ggtitle("Peak effects") +
     xlab("Difference between EOD and last uEMA in hrs") +
-    ylim(0, 100)
+    ylim(0, 800)
   
   return(gplot)
 }
