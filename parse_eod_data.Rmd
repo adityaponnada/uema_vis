@@ -39,8 +39,8 @@ combined_ema_file <- ldply(list_of_files, read.csv, header = TRUE, na.strings = 
 ## Filter out daily prompts on TIME days
 ```{r}
 
-combined_ema_time_daily_df <- subset(combined_ema_file, combined_ema_file$Prompt_Type == "Daily" & combined_ema_file$Study_Mode == "TIME")
-# combined_ema_time_daily_df <- subset(combined_ema_file, combined_ema_file$Prompt_Type == "EMA" & combined_ema_file$Study_Mode == "BURST")
+# combined_ema_time_daily_df <- subset(combined_ema_file, combined_ema_file$Prompt_Type == "Daily" & combined_ema_file$Study_Mode == "TIME")
+combined_ema_time_daily_df <- subset(combined_ema_file, combined_ema_file$Prompt_Type == "Daily" & combined_ema_file$Study_Mode == "BURST")
 
 ```
 
@@ -187,7 +187,8 @@ Combined report file
 
 get_report_pid_df <- function(df, p_id){
   pid_df <- subset(df, df$participant_ID == p_id)
-  pid_df <- subset(pid_df, pid_df$study_mode == "TIME")
+  # pid_df <- subset(pid_df, pid_df$study_mode == "TIME")
+  pid_df <- subset(pid_df, pid_df$study_mode == "BURST")
   return(pid_df)
 }
 
@@ -210,7 +211,9 @@ get_EOD_pid_var_df <- function(df, variable){
 
 prepare_pid_subset <- function(df, report_df, p_id) {
   pid_subset_df <- get_EOD_pid_df(df, p_id)
+  # print(head(pid_subset_df))
   pid_report_df <- get_report_pid_df(report_df, p_id)
+  # print(pid_report_df)
   
   for(i in 1:nrow(pid_report_df)){
   # print(paste0(i, " _ ", pid_report_df$current_wake_time[i]))
@@ -325,6 +328,15 @@ for (username in p_id_list){
 }
 
 ```
+
+
+Write the combined file to a csv file
+```{r}
+
+write.csv(combined_df, file="D:/uema_exploratory_plots/trajectory_plots/beod_merged_df.csv", row.names = FALSE, quote = FALSE)
+
+```
+
 
 Create a test function to only get the wake period attached to prompt responses for all the users
 ```{r}
