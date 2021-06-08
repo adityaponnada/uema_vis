@@ -230,6 +230,10 @@ uEMA combined file
 
 get_bEMA_pid_var_df <- function(df, variable){
   var_df <- subset(df, df$Q_ID == variable)
+  # sample rows here
+  if (nrow(var_df) != 0){
+    var_df <- var_df[sample(nrow(var_df), 5), ]
+  }
   return(var_df)
 }
 
@@ -327,6 +331,14 @@ get_var_profile <- function(df, variable, wake_period_name){
   # wake_subset_df <- subset(wake_subset_df, wake_subset_df$Q_ID == variable)
   # print(variable)
   if (nrow(wake_subset_df) > 2){
+    min_rows_needed = 3
+    total_available <- nrow(wake_subset_df)
+    if (total_available >= 5){
+      to_sample = 5
+    } else {
+      to_sample = 3
+    }
+    wake_subset_df <- wake_subset_df[sample(nrow(wake_subset_df), to_sample), ]
     slope_list <- c()
     val_list = wake_subset_df$Answer_score
     # print(val_list)
