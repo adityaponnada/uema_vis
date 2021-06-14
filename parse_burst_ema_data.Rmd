@@ -271,6 +271,60 @@ prepare_pid_subset <- function(df, report_df, p_id) {
 
 ```
 
+
+Add a subsetting function that also subsamples the dataframe for each participant within a wake period
+```{r}
+
+prepare_pid_subsampled_subset <- function(df, report_df, p_id) {
+  # print(p_id)
+  pid_subset_df <- get_bEMA_pid_df(df, p_id)
+  # print(head(pid_subset_df))
+  pid_report_df <- get_report_pid_df(report_df, p_id)
+  # print(head(pid_report_df))
+  # pid_subset_df <- subset(pid_subset_df, pid_subset_df$Q_ID != "activity")
+  nrow_report <- nrow(pid_report_df)
+  
+  for(i in 1:nrow(pid_report_df)){
+    # print(i)
+  # print(paste0(i, " _ ", pid_report_df$current_wake_time[i]))
+  pid_subset_df$wake_period[pid_subset_df$prompt_date_time >= pid_report_df$current_wake_time[i] & pid_subset_df$prompt_date_time <= pid_report_df$current_sleep_time[i]] <- paste0("Wake_period_", i)
+  # print(paste0("Wake_period_", i))
+  }
+  
+  local_wp_list <- unique(pid_subset_df$wake_period)
+  
+  updated_subset_df <- data.frame()
+  
+  for (wp in local_wp_list){
+    wp_subset <- subset(pid_subset_df, pid_subset_df$wake_period == wp)
+    local_var_list <- unique(wp_subset$Q_ID)
+    for (variable in local_var_list){
+      var_subset <- subset(wp_subset, wp_subset$Q_ID == variable)
+      subset_rows <- nrow(var_subset)
+      if (subset_rows > 2){
+        if (subset_rows >= 5){
+        to_sample = 5
+      } else {
+        to_sample = 3
+      }
+        var_subset <- var_subset[sample(nrow(var_subset), to_sample), ]
+        updated_subset_df <- rbind(updated_subset_df, var_subset)
+      }
+      
+      
+    }
+    
+  }
+  
+  return(updated_subset_df)
+  
+}
+
+
+```
+
+
+
 Add a test function to get the wake period along with prompt response file for all participants
 ```{r}
 
@@ -279,7 +333,7 @@ plist <- unique(time_daily_long_df$P_ID)
 bema_wp_df <- data.frame()
 
 for (pid in plist){
-  p_temp_df <- prepare_pid_subset(time_daily_long_df, combined_report_df, pid)
+  p_temp_df <- prepare_pid_subsampled_subset(time_daily_long_df, combined_report_df, pid)
   bema_wp_df <- rbind(bema_wp_df, p_temp_df)
 }
 
@@ -415,6 +469,7 @@ p_id <- "neutergoldfishsworn@timestudy_com"
 # p_id <- "sharpnessnextpouch@timestudy_com"
 
 pid_subset_df <- prepare_pid_subset(time_daily_long_df, combined_report_df, p_id)
+pid_subsampled_subset_df <- prepare_pid_subsampled_subset(time_daily_long_df, combined_report_df, p_id)
 
 pid_var_profile_df <- get_var_profile_df(pid_subset_df, p_id)
 

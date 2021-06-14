@@ -21,7 +21,7 @@ library(purrr)
 
 bema_responses_path = "D:/uema_exploratory_plots/trajectory_plots/bema_wp_export.csv"
 
-uema_wp_df <- read.csv(file=bema_responses_path, sep = ",", header = TRUE, row.names = NULL)
+bema_wp_df <- read.csv(file=bema_responses_path, sep = ",", header = TRUE, row.names = NULL)
 
 
 ```
@@ -42,5 +42,381 @@ eod_df <- read.csv(file=eod_path, sep = ",", header = TRUE, row.names = NULL)
 long_merged_path = "D:/uema_exploratory_plots/trajectory_plots/bema_eod_merged_long_df.csv"
 
 long_merged_df <- read.csv(file=long_merged_path, sep = ",", header = TRUE)
+
+```
+
+
+## Remove unkwon users
+```{r}
+
+eod_df <- subset(eod_df,eod_df$Participant_ID != "unknown_user")
+
+bema_wp_df <- subset(bema_wp_df, bema_wp_df$Participant_ID != "unknown_user")
+
+```
+
+## Remove unwanted wake periods from the eod file
+```{r}
+
+wp_list <- unique(bema_wp_df$wake_period)
+
+eod_df <- subset(eod_df, eod_df$wake_period %in% wp_list)
+
+```
+
+
+## Remove uncommon users
+```{r}
+
+bema_user_list <- unique(bema_wp_df$P_ID)
+
+eod_df$P_ID <- paste0(eod_df$Participant_ID,  "@timestudy_com")
+
+eod_df <- subset(eod_df, eod_df$P_ID %in% bema_user_list)
+
+```
+
+## Keep only relevant Q_IDs
+```{r}
+
+bema_qids <- c("resist", "focus", "frust", "sad", "stress", "happ", "ten", "fatig", "nerv", "rel")
+
+bema_wp_df <- subset(bema_wp_df, bema_wp_df$Q_ID %in% bema_qids)
+
+```
+
+For EOD
+```{r}
+
+eod_qids <- c("SAD", "HAPP", "FATIG", "REL", "TEN", "STRESS", "FRUST", "NERV", "RESIST", "FOC")
+
+eod_df <- subset(eod_df, eod_df$Q_ID %in% eod_qids)
+
+```
+
+Convert prompt time to date time objects
+```{r}
+
+bema_wp_df$date_timestamp <- as.POSIXct(bema_wp_df$prompt_date_time, format = "%Y-%m-%d %H:%M:%OS")
+
+```
+
+for EOD
+```{r}
+
+eod_df$date_timestamp <- as.POSIXct(eod_df$Initial_Prompt_Local_Time, format="%Y-%m-%d %H:%M:%OS")
+
+```
+
+## Filter out the last uema prompt for each construct --  before EOD
+
+```{r}
+
+eod_df$p_id_wp <- paste0(eod_df$P_ID, "_", eod_df$wake_period)
+bema_wp_df$p_id_wp <- paste0(bema_wp_df$P_ID, "_", bema_wp_df$wake_period)
+
+
+```
+
+Keep only the prompt time column and pid_wakeperiod column for each
+```{r}
+
+eod_df <- subset(eod_df, !is.na(eod_df$wake_period))
+
+eod_wp_df <- eod_df[, c("p_id_wp", "date_timestamp")]
+
+eod_wp_df <- unique(eod_wp_df)
+
+```
+
+Merge with uema_df
+```{r}
+
+bema_ts_wp_df <- bema_wp_df
+
+joined_bema_eod_df <- merge(bema_ts_wp_df, eod_wp_df, by = "p_id_wp", all.x = FALSE, all.y = FALSE)
+
+list_pid_wps <- unique(eod_wp_df$p_id_wp)
+
+
+```
+
+Loop through the eod_wp_df
+```{r}
+
+for (pid_wp in list_pid_wps){
+  bema_ts_wp_df$eod_time[bema_ts_wp_df$p_id_wp == pid_wp] <- as.character(eod_wp_df$date_timestamp[eod_wp_df$p_id_wp == pid_wp])
+}
+
+bema_ts_wp_df$eod_time <- as.POSIXct(bema_ts_wp_df$eod_time, format = "%Y-%m-%d %H:%M:%OS")
+
+```
+
+Part - 1: Get the items asked before the EOD time
+```{r}
+
+bema_eod_time_v1_df <- bema_ts_wp_df
+
+bema_eod_time_v1_df$time_dff <- round(as.numeric(difftime(bema_eod_time_v1_df$eod_time, bema_eod_time_v1_df$date_timestamp, units = "hours")), digits = 4)
+
+```
+
+Remove prompts after eod
+```{r}
+
+bema_eod_time_v1_df <- subset(bema_eod_time_v1_df, bema_eod_time_v1_df$time_dff >= 0)
+
+
+```
+
+
+Filter out the last occurrences
+```{r}
+
+pid_wp_list <- unique(bema_eod_time_v1_df$p_id_wp)
+var_list <- unique(bema_eod_time_v1_df$Q_ID)
+# var_list <- c("stress")
+
+bema_eod_difftime_df <- data.frame()
+
+for (pid_wp in pid_wp_list){
+  # print(pid_wp)
+  
+  pid_temp_df <- subset(bema_eod_time_v1_df, bema_eod_time_v1_df$p_id_wp == pid_wp)
+  
+  for (bema_var in var_list){
+    pid_wp_var_df <- subset(pid_temp_df, pid_temp_df$Q_ID == bema_var)
+    nrow_var <- nrow(pid_wp_var_df)
+    if (nrow_var >= 3){
+    # print(nrow_var)
+    # print(head(pid_wp_var_df$time_dff))
+    # time_diff_list <- pid_wp_var_df$time_dff
+    # min_time <- round(min(time_diff_list), 2)
+    # print(paste0("min time: ", min_time))
+    # pid_wp_var_df <- subset(pid_wp_var_df, pid_wp_var_df$time_diff == min_time)
+    pid_wp_var_df <- pid_wp_var_df[pid_wp_var_df$time_dff == min(pid_wp_var_df$time_dff), ]
+    # print(nrow(pid_wp_var_df))
+    bema_eod_difftime_df <- rbind(bema_eod_difftime_df, pid_wp_var_df)  
+    }
+    
+  }
+  
+  
+}
+
+
+```
+
+
+## Remove an unwanted username
+```{r}
+
+bema_eod_difftime_df <- subset(bema_eod_difftime_df, bema_eod_difftime_df$P_ID != "uniformlyharmfulbush@timestudy_com")
+
+
+```
+
+## Create an identifer column in long merged file
+```{r}
+
+long_merged_df$pid_wp <- paste0(long_merged_df$p_id, "_", long_merged_df$wake_period)
+
+long_merged_df <- subset(long_merged_df, !is.na(long_merged_df$bema))
+
+long_merged_df <- subset(long_merged_df, long_merged_df$p_id != "uniformlyharmfulbush@timestudy_com")
+
+long_merged_df$bema_id <- gsub("bema_","",as.character(long_merged_df$bema_type))
+
+long_merged_df$pid_wp_qid <- paste0(long_merged_df$pid_wp, "_", long_merged_df$bema_id)
+
+
+```
+
+## Attach the time diff to long_merged_df
+```{r}
+
+bema_eod_difftime_df$pid_wp_qid <- paste0(bema_eod_difftime_df$p_id_wp, "_", bema_eod_difftime_df$Q_ID)
+
+pid_wp_qid_df <- bema_eod_difftime_df[, c("pid_wp_qid", "time_dff")]
+
+merged_timediff <- merge(long_merged_df, pid_wp_qid_df, by.x = "pid_wp_qid", by.y = "pid_wp_qid", all.x = TRUE, all.y = FALSE)
+
+
+```
+
+## extreme mapping plots
+Comparing the following:
+Histogram of timediff for consistent-high --> Extremely/Very much so
+Histogram for timediff when consistent-high X--> Extremely/Very much so
+```{r}
+
+get_ch_extreme_mapping_plot <- function(df){
+  df <- subset(df, df$bema == "Consistent-high")
+  
+  # | df$eod == "Quite a bit"
+  
+  df$mapping_type[df$eod == "Extremely" | df$eod == "Very much so" | df$eod == "Quite a bit"] <- "High-to-high mapping" 
+  df$mapping_type[df$eod != "Extremely" & df$eod != "Very much so" & df$eod != "Quite a bit"] <- "No high-to-high mapping" 
+  
+  # df$mapping_type[df$uema == "Consistent-high" && !(df$eod == "Extremely" || df$eod == "Very much so")] <- "No high-to-high mapping" 
+  df <- subset(df, !is.na(df$mapping_type))
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ .) +
+    ggtitle("Consistent-high --> extremely/very much so/Quite a bit") +
+    xlab("Difference between EOD and last burst EMA in hrs") +
+    ylim(0, 1000)
+  
+  return(gplot)
+}
+
+```
+
+
+Histogram time diff for consistent-low --> not at all and consistent-low X--> not at all
+```{r}
+
+get_cl_extreme_mapping_plot <- function(df){
+  df <- subset(df, df$bema == "Consistent-low")
+  
+  df$mapping_type[df$eod == "Not at all"] <- "Low-to-low mapping" 
+  df$mapping_type[df$eod != "Not at all"] <- "No low-to-low mapping" 
+  
+  # df$mapping_type[df$uema == "Consistent-high" && !(df$eod == "Extremely" || df$eod == "Very much so")] <- "No high-to-high mapping" 
+  df <- subset(df, !is.na(df$mapping_type))
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ .) +
+    ggtitle("Consistent-low --> Not at all") +
+    xlab("Difference between EOD and last  burst EMA in hrs") +
+    ylim(0, 1000)
+  
+  return(gplot)
+}
+
+```
+
+get plots by construct for consistent-low to not at all
+```{r}
+
+get_cl_extreme_variable_plot <- function(df){
+  df <- subset(df, df$bema == "Consistent-low")
+  
+  df$mapping_type[df$eod == "Not at all"] <- "Low-to-low mapping" 
+  df$mapping_type[df$eod != "Not at all"] <- "No low-to-low mapping" 
+  
+  # df$mapping_type[df$uema == "Consistent-high" && !(df$eod == "Extremely" || df$eod == "Very much so")] <- "No high-to-high mapping" 
+  df <- subset(df, !is.na(df$mapping_type))
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ bema_id) +
+    ggtitle("Consistent-low --> Not at all") +
+    xlab("Difference between EOD and last burst EMA in hrs") +
+    ylim(0, 100)
+  
+  return(gplot)
+}
+
+```
+
+get plots by construct for consistent-high to extremely/very much so
+```{r}
+
+get_ch_extreme_variable_plot <- function(df){
+  df <- subset(df, df$bema == "Consistent-high")
+  # | df$eod == "Quite a bit"
+  
+  df$mapping_type[df$eod == "Extremely" | df$eod == "Very much so"] <- "High-to-high mapping" 
+  df$mapping_type[df$eod != "Extremely" & df$eod != "Very much so"] <- "No high-to-high mapping" 
+  
+  # df$mapping_type[df$uema == "Consistent-high" && !(df$eod == "Extremely" || df$eod == "Very much so")] <- "No high-to-high mapping" 
+  df <- subset(df, !is.na(df$mapping_type))
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ bema_id) +
+    ggtitle("Consistent-high --> Extremely/Very much so") +
+    xlab("Difference between EOD and last burst EMA in hrs") +
+    ylim(0, 100)
+  
+  return(gplot)
+}
+
+```
+
+
+## Get the peak effects plots
+Peak effects include: Accumulation, fluctuation, and dissipation --> extremely, very much so, and quite a bit
+```{r}
+
+get_peak_effects_plot <- function(df){
+  
+  uema_answer_list <- c("Accumulation", "Fluctuating", "Dissipation")
+  eod_answer_list <- c("Extremely", "Very much so", "Quite a bit")
+  
+  df <- subset(df, df$bema %in% uema_answer_list)
+  
+  df$mapping_type[df$eod %in% eod_answer_list] <- "Peak-effect"
+  df$mapping_type[!(df$eod %in% eod_answer_list)] <- "No peak-effect"
+  
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ .) +
+    ggtitle("Peak effects (including quite a bit)") +
+    xlab("Difference between EOD and last burst EMA in hrs") +
+    ylim(0, 2500)
+  
+  return(gplot)
+}
+
+```
+
+Group the plot by uema trajectory type
+```{r}
+
+get_peak_effects_trajectory_plot <- function(df){
+  
+  uema_answer_list <- c("Accumulation", "Fluctuating", "Dissipation")
+  eod_answer_list <- c("Extremely", "Very much so")
+  
+  df <- subset(df, df$bema %in% uema_answer_list)
+  
+  df$mapping_type[df$eod %in% eod_answer_list] <- "Peak-effect"
+  df$mapping_type[!(df$eod %in% eod_answer_list)] <- "No peak-effect"
+  
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ bema) +
+    ggtitle("Peak effects") +
+    xlab("Difference between EOD and last uEMA in hrs") +
+    ylim(0, 1500)
+  
+  return(gplot)
+}
+
+```
+
+Group by variable for peak effects
+```{r}
+
+get_peak_effect_variable_plot <- function(df){
+  
+  uema_answer_list <- c("Accumulation", "Fluctuating", "Dissipation")
+  eod_answer_list <- c("Extremely", "Very much so")
+  
+  df <- subset(df, df$uema %in% uema_answer_list)
+  
+  df$mapping_type[df$eod %in% eod_answer_list] <- "Peak-effect"
+  df$mapping_type[!(df$eod %in% eod_answer_list)] <- "No peak-effect"
+  
+  gplot <- ggplot(df, aes(x = time_dff)) +
+  geom_histogram(fill = "white", colour = "black") +
+  facet_grid(mapping_type ~ uema_id) +
+    ggtitle("Peak effects") +
+    xlab("Difference between EOD and last uEMA in hrs") +
+    ylim(0, 100)
+  
+  return(gplot)
+  
+}
 
 ```
