@@ -101,6 +101,7 @@ combined_uema_file <- combined_uema_file[!grepl("soc_", combined_uema_file$Quest
 ```
 
 
+
 ## Score answers
 uEMA combined file
 
@@ -121,6 +122,33 @@ combined_uema_file$Q_ID <- strsplit(combined_uema_file$Question_X_ID, "[[:digit:
 combined_uema_file$Q_ID <- lapply(combined_uema_file$Q_ID, '[[', 1)
 combined_uema_file$Q_ID <- as.character(combined_uema_file$Q_ID)
 combined_uema_file$Q_ID <- gsub(".{1}$", "", combined_uema_file$Q_ID)
+```
+
+## Remove activity type
+```{r}
+
+combined_uema_file <- subset(combined_uema_file, combined_uema_file$Q_ID != "activity")
+
+```
+
+
+## Plot the response distribution across
+```{r}
+
+get_resp_dist_plot <- function(df){
+  plot_hist <- ggplot(data=df, aes(Answer_score)) +
+  geom_histogram(binwidth = 1) +
+  scale_x_continuous(breaks=seq(1,3,1)) +
+  # scale_y_continuous(breaks=seq(0,1,0.5)) +
+  theme(legend.position = "none") +
+  theme(strip.text.x = element_text(size = 15, colour = "black")) +
+  ggtitle("Response distribution uEMA") +
+  facet_wrap(~Q_ID, ncol = 5)
+  # plot_hist <- ggplotly(plot_hist) %>%
+  # layout(margin=list(r=100, l=70, t=20, b=1))
+  return(plot_hist)
+}
+
 ```
 
 
