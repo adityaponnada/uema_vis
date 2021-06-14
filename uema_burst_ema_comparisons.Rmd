@@ -1,0 +1,249 @@
+---
+title: "uEMA_burst_ema_comparisons"
+author: "Aditya Ponnada"
+date: "6/13/2021"
+output: html_document
+---
+
+# Import library
+```{r}
+
+library(ggplot2)
+library(plotly)
+library(psych)
+library(rmcorr)
+library(lme4)
+library(dplyr)
+library(reshape2)
+library(cowplot)
+library(patchwork)
+library(gridExtra)
+options(digits = 4)
+
+```
+
+## Read uema trajectories file
+```{r}
+
+uema_path <- "D:/new_data_pre_processed/uema_trajectories_combined.csv"
+
+uema_df <- read.csv(file=uema_path, sep = ",", header = TRUE)
+
+
+
+```
+
+## Read the burst EMA combined responses + wake period mapped file
+```{r}
+
+bema_path = "D:/uema_exploratory_plots/trajectory_plots/bema_merged_df.csv"
+
+bema_df <- read.csv(file=bema_path, sep = ",", header = TRUE)
+
+
+```
+
+## Create uema_df with only common columns with burst ema
+```{r}
+
+uema_comm_df <- uema_df[, c("p_id", "wake_period", "sad", "happy", "fatigue", "relax", "tense", "stress", "frust", "nervous", "focus", "control", "routine")]
+
+```
+
+## Rename bema columns for consistency
+```{r}
+
+names(bema_df) <- c("p_id", "wake_period", "sad", "happy", "fatigue", "relax", "tense", "stress", "frust", "nervous", "focus", "control", "routine")
+
+```
+
+
+## Remove the "unknown user" account
+```{r}
+
+uema_comm_df <- subset(uema_comm_df, uema_comm_df$p_id != "unknown_user")
+
+```
+
+## Keep the same usrs
+```{r}
+
+user_list <- unique(uema_comm_df$p_id)
+
+bema_df <- subset(bema_df, bema_df$p_id %in% user_list)
+
+```
+
+
+```{r}
+
+
+
+get_trajectory_freqs <- function(df){
+  freq_df <- data.frame()
+  col_names <- names(df)
+  col_names <- col_names[3:ncol(df)]
+  for (col in col_names){
+    col_table <- table(df[[col]])
+    col_df <- as.data.frame(col_table)
+    col_df$var_name <- col
+    col_df <- col_df %>% select(var_name, everything())
+    freq_df <- rbind(freq_df, col_df)
+  }
+  
+  return(freq_df)
+}
+
+```
+
+Now get the df
+```{r}
+trajectory_dist_uema <- get_trajectory_freqs(uema_comm_df)
+trajectory_dist_bema <- get_trajectory_freqs(bema_df)
+```
+
+
+Plot by variable --> heat map
+```{r}
+
+get_traj_plot <- function(df, type){
+traj_plot <- ggplot(df, aes(x = Var1, y = var_name)) + 
+  geom_tile(aes(fill = Freq)) + 
+  scale_fill_gradient(name = 'Frequency', low = 'white', high = 'red') + 
+  # scale_fill_gradientn(colors = c("white", "red"), values = c(0, 50)) +
+  ggtitle("Trajectories vs variables") + 
+  ylab(paste0(type, " constructs")) + 
+  xlab("Wake period trajectory types") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+return(traj_plot)
+}
+
+
+
+```
+
+add %days to trajectory_dist
+```{r}
+
+get_traj_dist <- function(df){
+
+  df$var_sum_days <- ave(df$Freq, df$var_name, FUN = sum)
+
+  df$perc_days <- df$Freq*100/df$var_sum_days  
+  
+  return(df)
+}
+
+
+
+```
+
+
+Get the traj dist df for bema and uema
+```{r}
+
+traj_dist_uema_df <- get_traj_dist(trajectory_dist_uema)
+traj_dist_bema_df <- get_traj_dist(trajectory_dist_bema)
+
+```
+
+
+## Create normalized heat maps for bema and uema
+```{r}
+
+get_traj_norm_plot <- function(df, type){
+traj_plot <- ggplot(df, aes(x = Var1, y = var_name)) + 
+  geom_tile(aes(fill = perc_days)) + 
+  # scale_fill_gradient(name = '% days', low = 'white', high = 'red') + 
+  scale_fill_gradientn(name = '% days', colors = c("white", "red"), values = scales::rescale(c(0, 50)), limits = c(0, 50)) +
+  ggtitle("Trajectories vs variables") + 
+  ylab(paste0(type, " constructs")) + 
+  xlab("Wake period trajectory types") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+return(traj_plot)
+}
+
+```
+
+
+## Combine the two data frames
+```{r}
+
+traj_dist_uema_v2 <- traj_dist_uema_df
+
+names(traj_dist_uema_v2) <- paste0("uema_", names(traj_dist_uema_v2))
+
+traj_dist_bema_v2 <- traj_dist_bema_df
+
+names(traj_dist_bema_v2) <- paste0("bema_", names(traj_dist_bema_v2))
+
+combined_df <- cbind(traj_dist_uema_v2, traj_dist_bema_v2)
+
+```
+
+## Get % days from total measurement days
+```{r}
+
+combined_df$bema_total_perc_days <- combined_df$bema_Freq*100/(combined_df$uema_var_sum_days + combined_df$bema_var_sum_days)
+combined_df$uema_total_perc_days <- combined_df$uema_Freq*100/(combined_df$uema_var_sum_days + combined_df$bema_var_sum_days)
+
+```
+
+## Get the plot for bema vs uema for the % out of total
+```{r}
+get_total_perc_plot <- function(df, type){
+  if (type == "uEMA"){
+    traj_plot <- ggplot(df, aes(x = uema_Var1, y = uema_var_name)) + 
+  geom_tile(aes(fill = uema_total_perc_days)) + 
+  # scale_fill_gradient(name = '% total days', low = 'white', high = 'red') + 
+  scale_fill_gradientn(name = '% total days', colors = c("white", "red"), values = scales::rescale(c(0, 50)), limits = c(0, 30)) +
+  ggtitle("Trajectories vs variables") + 
+  ylab(paste0(type, " constructs")) + 
+  xlab("Wake period trajectory types") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+    
+  } else if (type == "Burst EMA") {
+    traj_plot <- ggplot(df, aes(x = bema_Var1, y = bema_var_name)) + 
+  geom_tile(aes(fill = bema_total_perc_days)) + 
+  # scale_fill_gradient(name = '% total days', low = 'white', high = 'red') + 
+  scale_fill_gradientn(name = '% total days', colors = c("white", "red"), values = scales::rescale(c(0, 50)), limits = c(0, 30)) +
+  ggtitle("Trajectories vs variables") + 
+  ylab(paste0(type, " constructs")) + 
+  xlab("Wake period trajectory types") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+  }
+  
+return(traj_plot)
+}
+```
+
+
+
+## Get the difference in % across burst EMA and uEMA
+```{r}
+
+
+traj_dist_uema_df$diff_perc_bema <- traj_dist_bema_df$perc_days - traj_dist_uema_df$perc_days
+
+
+```
+
+## unction to get the difference plot
+```{r}
+get_traj_diffperc_plot <- function(df){
+  max_diff <- max(df$diff_perc_bema)
+  min_diff <- min(df$diff_perc_bema)
+traj_plot <- ggplot(df, aes(x = Var1, y = var_name)) + 
+  geom_tile(aes(fill = diff_perc_bema)) + 
+  # scale_fill_gradient(name = '% diff days', low = 'cyan', high = 'red') + 
+  scale_fill_gradientn(colors = c("green", "white", "blue"), values = scales::rescale(c(min_diff, 0, max_diff))) +
+  ggtitle("Trajectories vs variables") + 
+  ylab(paste0("All", " constructs")) + 
+  xlab("Wake period trajectory types") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+return(traj_plot)
+}
+
+
+```
+
