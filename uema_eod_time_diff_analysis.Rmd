@@ -85,9 +85,9 @@ uema_wp_df <- subset(uema_wp_df, uema_wp_df$Q_ID %in% uema_qids)
 For EOD
 ```{r}
 
-eod_qiods <- c("SAD", "HAPP", "FATIG", "REL", "TEN", "STRESS", "FRUST", "NERV", "RESIST", "FOC")
+eod_qids <- c("SAD", "HAPP", "FATIG", "REL", "TEN", "STRESS", "FRUST", "NERV", "RESIST", "FOC")
 
-eod_df <- subset(eod_df, eod_df$Q_ID %in% eod_qiods)
+eod_df <- subset(eod_df, eod_df$Q_ID %in% eod_qids)
 
 ```
 
