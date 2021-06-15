@@ -10,6 +10,7 @@ library(psych)
 library(dplyr)
 library(plyr)
 library(reshape2)
+library(data.table)
 
 ```
 
@@ -115,13 +116,16 @@ time_daily_long_df <- time_daily_long_df[order(time_daily_long_df$Participant_ID
 
 ## Filter out unwanted questions
 ```{r}
-questions_to_include <- c("Q1_SAD", "Q2_HAPP", "Q3_FATIG", "Q4_END", "Q5_REL", "Q6_TEN", "Q7_STRESS", "Q8_FRUST", "Q9_NERV", "Q10_FOC", "Q11_RESIST", "Q12_DEM", "Q14_ROUT", "Q15_SICK")
+# questions_to_include <- c("Q1_SAD", "Q2_HAPP", "Q3_FATIG", "Q4_EN", "Q5_REL", "Q6_TEN", "Q7_STRESS", "Q8_FRUST", "Q9_NERV", "Q10_FOC", "Q11_RESIST", "Q12_DEM", "Q14_ROUT", "Q15_SICK")
+questions_to_include <- c("_SAD", "_HAPP", "_FATIG", "_EN", "_REL", "_TEN", "_STRESS", "_FRUST", "_NERV", "_FOC", "_RESIST", "_DEM", "_ROUT", "_SICK", "_ENP", "_DEM", "_PROC")
 ```
 
 Only select these rows
 ```{r}
-time_daily_long_df <- subset(time_daily_long_df, time_daily_long_df$Q_D %in% questions_to_include)
+# time_daily_long_df <- subset(time_daily_long_df, time_daily_long_df$Q_D %in% questions_to_include)
+time_daily_long_df <- dplyr::filter(time_daily_long_df, grepl(paste(questions_to_include, collapse = "|"), Q_D)) 
 ```
+
 
 ## Convert the prompt time to date time object
 ```{r}
@@ -182,6 +186,20 @@ time_daily_long_df$Answer_score[time_daily_long_df$ANS_TEXT == "Not at all"] <- 
 
 ```
 
+Also add EMA score for plotting
+```{r}
+
+time_daily_long_df$Answer_score_ema[time_daily_long_df$ANS_TEXT == "Very much so"] <- 5
+time_daily_long_df$Answer_score_ema[time_daily_long_df$ANS_TEXT == "Extremely"] <- 5
+time_daily_long_df$Answer_score_ema[time_daily_long_df$ANS_TEXT == "Quite a bit"] <- 4
+time_daily_long_df$Answer_score_ema[time_daily_long_df$ANS_TEXT == "Moderately"] <- 3
+time_daily_long_df$Answer_score_ema[time_daily_long_df$ANS_TEXT == "A little"] <- 2
+time_daily_long_df$Answer_score_ema[time_daily_long_df$ANS_TEXT == "Not at all"] <- 1
+
+
+```
+
+
 Remove unwanted answer types
 ```{r}
 answers_to_include <- c("Very much so", "Extremely", "Quite a bit", "Moderately", "A little", "Not at all")
@@ -205,6 +223,46 @@ time_daily_long_df$Q_ID <- tolower(time_daily_long_df$Q_ID)
 
 ```
 
+## Remove "Engage" questions
+```{r}
+time_daily_long_df <- subset(time_daily_long_df, time_daily_long_df$Q_ID != "engage")
+```
+
+
+## Get EMA response distribution
+Using original scores
+```{r}
+
+plot_ema_hist <- ggplot(data=time_daily_long_df, aes(Answer_score_ema)) +
+  geom_histogram(binwidth = 1) +
+  scale_x_continuous(breaks=seq(1,5,1)) +
+  # scale_y_continuous(breaks=seq(0,1,0.5)) +
+  theme(legend.position = "none") +
+  theme(strip.text.x = element_text(size = 15, colour = "black")) +
+  # ylim(0, 20000) +
+  ggtitle("Response distribution EMA") +
+  facet_wrap(~Q_ID, ncol = 5)
+  # plot_hist <- ggplotly(plot_hist) %>%
+  # layout(margin=list(r=100, l=70, t=20, b=1))
+
+```
+
+Using converted scores
+```{r}
+
+plot_ema_short_hist <- ggplot(data=time_daily_long_df, aes(Answer_score)) +
+  geom_histogram(binwidth = 1) +
+  scale_x_continuous(breaks=seq(1,3,1)) +
+  # scale_y_continuous(breaks=seq(0,1,0.5)) +
+  theme(legend.position = "none") +
+  theme(strip.text.x = element_text(size = 15, colour = "black")) +
+  # ylim(0, 20000) +
+  ggtitle("Response distribution EMA --> uEMA") +
+  facet_wrap(~Q_ID, ncol = 5)
+  # plot_hist <- ggplotly(plot_hist) %>%
+  # layout(margin=list(r=100, l=70, t=20, b=1))
+
+```
 
 
 ## create a subset for participant
