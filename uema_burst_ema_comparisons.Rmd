@@ -46,14 +46,14 @@ bema_df <- read.csv(file=bema_path, sep = ",", header = TRUE)
 ## Create uema_df with only common columns with burst ema
 ```{r}
 
-uema_comm_df <- uema_df[, c("p_id", "wake_period", "sad", "happy", "fatigue", "relax", "tense", "stress", "frust", "nervous", "focus", "control", "routine")]
+uema_comm_df <- uema_df[, c("p_id", "wake_period", "sad", "happy", "fatigue", "energy","relax", "tense", "stress", "frust", "nervous", "focus", "control", "proc", "demands","routine")]
 
 ```
 
 ## Rename bema columns for consistency
 ```{r}
 
-names(bema_df) <- c("p_id", "wake_period", "sad", "happy", "fatigue", "relax", "tense", "stress", "frust", "nervous", "focus", "control", "routine")
+names(bema_df) <- c("p_id", "wake_period", "sad", "happy", "fatigue", "energy","relax", "tense", "stress", "frust", "nervous", "focus", "control", "proc","demands","routine")
 
 ```
 
